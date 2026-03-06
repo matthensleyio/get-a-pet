@@ -31,10 +31,15 @@ public sealed class MonitorOrchestrator(
 
         var diff = dogDiffEngine.ComputeDiff(currentDogs, state);
 
-        if (diff.NewDogs.Count > 0)
-        {
-            await HandleNewDogsAsync(diff.NewDogs, ct);
-        }
+        var newDogAids = diff.NewDogs.Select(d => d.Aid).ToHashSet();
+        var aidsNeedingDetails = await dogRepository.GetAidsNeedingDetailsAsync(ct);
+        var backfillDogs = currentDogs
+            .Where(d => !newDogAids.Contains(d.Aid) && aidsNeedingDetails.Contains(d.Aid))
+            .ToList();
+
+        var dogsToStore = (diff.NewDogs.Count > 0 || backfillDogs.Count > 0)
+            ? await HandleNewDogsAsync(currentDogs, diff.NewDogs, backfillDogs, ct)
+            : currentDogs;
 
         if (diff.RemovedAids.Count > 0)
         {
@@ -42,8 +47,8 @@ public sealed class MonitorOrchestrator(
             await dogRepository.RemoveDogsAsync(diff.RemovedAids, ct);
         }
 
-        await dogRepository.UpsertDogsAsync(currentDogs, ct);
-        await SaveCurrentStateAsync(currentDogs, ct);
+        await dogRepository.UpsertDogsAsync(dogsToStore, ct);
+        await SaveCurrentStateAsync(dogsToStore, ct);
     }
 
     private async Task HandleFirstRunAsync(IReadOnlyList<Dog> dogs, CancellationToken ct)
@@ -54,31 +59,60 @@ public sealed class MonitorOrchestrator(
         await SaveCurrentStateAsync(dogs, ct);
     }
 
-    private async Task HandleNewDogsAsync(IReadOnlyList<Dog> newDogs, CancellationToken ct)
+    private async Task<IReadOnlyList<Dog>> HandleNewDogsAsync(
+        IReadOnlyList<Dog> allCurrentDogs,
+        IReadOnlyList<Dog> newDogs,
+        IReadOnlyList<Dog> backfillDogs,
+        CancellationToken ct)
     {
-        logger.LogInformation("Found {Count} new dog(s)", newDogs.Count);
-
-        var breedTasks = newDogs
-            .Select(d => scrapingEngine.GetDogBreedAsync(d.Aid, ct))
-            .ToList();
-
-        var breeds = await Task.WhenAll(breedTasks);
-
-        var dogsWithBreeds = newDogs
-            .Select((dog, i) => dog with { Breed = breeds[i] })
-            .ToList();
-
-        var subscriptions = await subscriptionRepository.GetAllAsync(ct);
-
-        foreach (var dog in dogsWithBreeds)
+        if (newDogs.Count > 0)
         {
-            var payload = notificationEngine.BuildPayload(dog);
-            var sendTasks = subscriptions
-                .Select(sub => SendAndCleanupAsync(payload, sub, ct))
-                .ToList();
-
-            await Task.WhenAll(sendTasks);
+            logger.LogInformation("Found {Count} new dog(s)", newDogs.Count);
         }
+
+        if (backfillDogs.Count > 0)
+        {
+            logger.LogInformation("Backfilling details for {Count} dog(s)", backfillDogs.Count);
+        }
+
+        var dogsToFetch = newDogs.Concat(backfillDogs).ToList();
+
+        var detailTasks = dogsToFetch
+            .Select(d => scrapingEngine.GetDogDetailAsync(d.Aid, ct))
+            .ToList();
+
+        var details = await Task.WhenAll(detailTasks);
+
+        var enrichedDogs = dogsToFetch
+            .Select((dog, i) => details[i] is { } detail ? dog with
+            {
+                Breed = detail.Breed,
+                Color = detail.Color,
+                Size = detail.Size,
+                Weight = detail.Weight,
+                AdoptionFee = detail.AdoptionFee,
+                CurrentLocation = detail.CurrentLocation
+            } : dog)
+            .ToDictionary(d => d.Aid);
+
+        if (newDogs.Count > 0)
+        {
+            var subscriptions = await subscriptionRepository.GetAllAsync(ct);
+
+            foreach (var dog in newDogs.Select(d => enrichedDogs.TryGetValue(d.Aid, out var e) ? e : d))
+            {
+                var payload = notificationEngine.BuildPayload(dog);
+                var sendTasks = subscriptions
+                    .Select(sub => SendAndCleanupAsync(payload, sub, ct))
+                    .ToList();
+
+                await Task.WhenAll(sendTasks);
+            }
+        }
+
+        return allCurrentDogs
+            .Select(dog => enrichedDogs.TryGetValue(dog.Aid, out var enriched) ? enriched : dog)
+            .ToList();
     }
 
     private async Task SendAndCleanupAsync(

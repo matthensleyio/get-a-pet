@@ -38,6 +38,21 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
     private static readonly Regex BreedRegex = new(
         @"Breed:</span>\s*([^<]+)", RegexOptions.Compiled);
 
+    private static readonly Regex ColorRegex = new(
+        @"Color:</span>\s*([^<]+)", RegexOptions.Compiled);
+
+    private static readonly Regex SizeRegex = new(
+        @"Size:</span>\s*([^<]+)", RegexOptions.Compiled);
+
+    private static readonly Regex WeightRegex = new(
+        @"Weight:</span>\s*([^<]+)", RegexOptions.Compiled);
+
+    private static readonly Regex AdoptionFeeRegex = new(
+        @"Adoption Fee:</strong>\s*([^<]+)", RegexOptions.Compiled);
+
+    private static readonly Regex LocationRegex = new(
+        @"Location:</span>\s*([^<]+)", RegexOptions.Compiled);
+
     public async Task<IReadOnlyList<Dog>> GetAllDogsAsync(CancellationToken ct)
     {
         var client = httpClientFactory.CreateClient("PetBridge");
@@ -62,13 +77,13 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
             var photoUrl = ExtractPhotoUrl(cardHtml);
             var profileUrl = String.Format(ProfileUrlTemplate, aid);
 
-            dogs.Add(new Dog(aid, name, age, gender, photoUrl, null, profileUrl, default));
+            dogs.Add(new Dog(aid, name, age, gender, photoUrl, null, null, null, null, null, null, profileUrl, default));
         }
 
         return dogs;
     }
 
-    public async Task<string?> GetDogBreedAsync(string aid, CancellationToken ct)
+    public async Task<DogDetail?> GetDogDetailAsync(string aid, CancellationToken ct)
     {
         var client = httpClientFactory.CreateClient("PetBridge");
         var url = String.Format(DetailUrlTemplate, aid);
@@ -76,8 +91,14 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
         try
         {
             var html = await client.GetStringAsync(url, ct);
-            var match = BreedRegex.Match(html);
-            return match.Success ? match.Groups[1].Value.Trim() : null;
+
+            return new DogDetail(
+                ExtractGroup(BreedRegex, html)?.Trim(),
+                ExtractGroup(ColorRegex, html)?.Trim(),
+                ExtractGroup(SizeRegex, html)?.Trim(),
+                ExtractGroup(WeightRegex, html)?.Trim(),
+                ExtractGroup(AdoptionFeeRegex, html)?.Trim(),
+                ExtractGroup(LocationRegex, html)?.Trim());
         }
         catch (HttpRequestException)
         {

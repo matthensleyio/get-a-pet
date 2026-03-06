@@ -183,6 +183,8 @@ function renderDogs(dogs) {
         ? '<img src="' + imgSrc + '" alt="' + (dog.name || "Dog") + '" loading="lazy">'
         : '<img src="" alt="No photo" style="background:var(--border)">';
       var isNew = dog.firstSeen && (Date.now() - new Date(dog.firstSeen).getTime()) < 86400000;
+      var breed = dog.breed ? dog.breed.replace(/\s*\([^)]+\)/g, "").replace(/\s*\/\s*Mix\s*$/i, "").trim() : null;
+      var tags = [dog.size, dog.weight].filter(Boolean);
 
       return (
         '<div class="dog-card" data-aid="' +
@@ -197,7 +199,8 @@ function renderDogs(dogs) {
         "<p>" +
         [dog.gender, dog.age].filter(Boolean).join(" &middot; ") +
         "</p>" +
-        (dog.breed ? "<p>" + dog.breed + "</p>" : "") +
+        (breed ? '<p class="dog-card-breed">' + breed + "</p>" : "") +
+        (tags.length ? '<div class="dog-card-tags">' + tags.map(function (t) { return '<span class="dog-card-tag">' + t + "</span>"; }).join("") + "</div>" : "") +
         "</div></div>"
       );
     })
@@ -232,7 +235,15 @@ function showModal(dog) {
   if (dog.breed) {
     details.push({ label: "Breed", value: dog.breed });
   }
-
+  if (dog.color) {
+    details.push({ label: "Color", value: dog.color });
+  }
+  if (dog.size) {
+    details.push({ label: "Size", value: dog.size });
+  }
+  if (dog.weight) {
+    details.push({ label: "Weight", value: dog.weight });
+  }
   document.getElementById("modal-details").innerHTML = details
     .map(function (d) {
       return (

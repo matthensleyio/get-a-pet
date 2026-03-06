@@ -45,6 +45,11 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
                     ["Gender"] = dog.Gender,
                     ["PhotoUrl"] = dog.PhotoUrl,
                     ["Breed"] = dog.Breed,
+                    ["Color"] = dog.Color,
+                    ["Size"] = dog.Size,
+                    ["Weight"] = dog.Weight,
+                    ["AdoptionFee"] = dog.AdoptionFee,
+                    ["CurrentLocation"] = dog.CurrentLocation,
                     ["ProfileUrl"] = dog.ProfileUrl,
                     ["FirstSeen"] = DateTimeOffset.UtcNow
                 };
@@ -57,12 +62,28 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
                 existing["Age"] = dog.Age;
                 existing["Gender"] = dog.Gender;
                 existing["PhotoUrl"] = dog.PhotoUrl;
-                existing["Breed"] = dog.Breed;
                 existing["ProfileUrl"] = dog.ProfileUrl;
 
                 await _tableClient.UpdateEntityAsync(existing, existing.ETag, TableUpdateMode.Merge, ct);
             }
         }
+    }
+
+    public async Task<IReadOnlyList<string>> GetAidsNeedingDetailsAsync(CancellationToken ct)
+    {
+        var aids = new List<string>();
+
+        await foreach (var entity in _tableClient.QueryAsync<TableEntity>(
+            select: ["RowKey", "Breed"],
+            cancellationToken: ct))
+        {
+            if (entity.GetString("Breed") is null)
+            {
+                aids.Add(entity.RowKey);
+            }
+        }
+
+        return aids;
     }
 
     public async Task RemoveDogsAsync(IReadOnlyList<string> aids, CancellationToken ct)
@@ -88,6 +109,11 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
             entity.GetString("Gender"),
             entity.GetString("PhotoUrl"),
             entity.GetString("Breed"),
+            entity.GetString("Color"),
+            entity.GetString("Size"),
+            entity.GetString("Weight"),
+            entity.GetString("AdoptionFee"),
+            entity.GetString("CurrentLocation"),
             entity.GetString("ProfileUrl"),
             entity.GetDateTimeOffset("FirstSeen") ?? DateTimeOffset.UtcNow);
     }
