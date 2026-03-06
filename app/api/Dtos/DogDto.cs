@@ -9,4 +9,4 @@ public sealed record DogDto(
     string? Breed,
     string? ProfileUrl,
     DateTimeOffset FirstSeen,
-    int? DaysAtShelter);
+    DateTimeOffset? IntakeDate);

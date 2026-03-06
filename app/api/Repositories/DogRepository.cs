@@ -47,7 +47,7 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
                     ["Breed"] = dog.Breed,
                     ["ProfileUrl"] = dog.ProfileUrl,
                     ["FirstSeen"] = DateTimeOffset.UtcNow,
-                    ["DaysAtShelter"] = dog.DaysAtShelter
+                    ["IntakeDate"] = dog.IntakeDate
                 };
 
                 await _tableClient.AddEntityAsync(entity, ct);
@@ -60,7 +60,7 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
                 existing["PhotoUrl"] = dog.PhotoUrl;
                 existing["Breed"] = dog.Breed;
                 existing["ProfileUrl"] = dog.ProfileUrl;
-                existing["DaysAtShelter"] = dog.DaysAtShelter;
+                existing["IntakeDate"] = dog.IntakeDate;
 
                 await _tableClient.UpdateEntityAsync(existing, existing.ETag, TableUpdateMode.Merge, ct);
             }
@@ -92,6 +92,6 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
             entity.GetString("Breed"),
             entity.GetString("ProfileUrl"),
             entity.GetDateTimeOffset("FirstSeen") ?? DateTimeOffset.UtcNow,
-            entity.GetInt32("DaysAtShelter"));
+            entity.GetDateTimeOffset("IntakeDate"));
     }
 }

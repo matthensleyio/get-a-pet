@@ -1,6 +1,6 @@
 var API_BASE =
   location.hostname === "localhost" || location.hostname === "127.0.0.1"
-    ? "http://localhost:7071"
+    ? location.origin
     : "";
 
 var DB_NAME = "khs-dog-monitor";
@@ -151,10 +151,10 @@ function sortDogs(dogs) {
     });
   } else if (currentSort === "newest") {
     sorted.sort(function (a, b) {
-      var aDays = a.daysAtShelter !== null ? a.daysAtShelter : 999;
-      var bDays = b.daysAtShelter !== null ? b.daysAtShelter : 999;
-      if (aDays !== bDays) {
-        return aDays - bDays;
+      var aIntake = a.intakeDate ? new Date(a.intakeDate).getTime() : 0;
+      var bIntake = b.intakeDate ? new Date(b.intakeDate).getTime() : 0;
+      if (aIntake !== bIntake) {
+        return bIntake - aIntake;
       }
       return new Date(b.firstSeen) - new Date(a.firstSeen);
     });
@@ -187,7 +187,7 @@ function renderDogs(dogs) {
       var imgTag = imgSrc
         ? '<img src="' + imgSrc + '" alt="' + (dog.name || "Dog") + '" loading="lazy">'
         : '<img src="" alt="No photo" style="background:var(--border)">';
-      var isNew = dog.daysAtShelter === 0;
+      var isNew = dog.intakeDate && (Date.now() - new Date(dog.intakeDate).getTime()) < 86400000;
 
       return (
         '<div class="dog-card" data-aid="' +

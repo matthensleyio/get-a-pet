@@ -65,9 +65,11 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
             var photoUrl = ExtractPhotoUrl(cardHtml);
             var profileUrl = String.Format(ProfileUrlTemplate, aid);
             var daysOldMatch = DaysOldRegex.Match(cardHtml);
-            int? daysAtShelter = daysOldMatch.Success ? Int32.Parse(daysOldMatch.Groups[1].Value) : null;
+            DateTimeOffset? intakeDate = daysOldMatch.Success
+                ? DateTimeOffset.UtcNow.Date.AddDays(-Int32.Parse(daysOldMatch.Groups[1].Value))
+                : null;
 
-            dogs.Add(new Dog(aid, name, age, gender, photoUrl, null, profileUrl, default, daysAtShelter));
+            dogs.Add(new Dog(aid, name, age, gender, photoUrl, null, profileUrl, default, intakeDate));
         }
 
         return dogs;
