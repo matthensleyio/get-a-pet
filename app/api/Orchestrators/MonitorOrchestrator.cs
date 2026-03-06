@@ -28,6 +28,7 @@ public sealed class MonitorOrchestrator(
 
         if (currentCount == state.Count)
         {
+            await stateRepository.TouchAsync(ct);
             return;
         }
 

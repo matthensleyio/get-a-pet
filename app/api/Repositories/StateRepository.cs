@@ -36,6 +36,15 @@ public sealed class StateRepository(TableServiceClient tableServiceClient)
         }
     }
 
+    public async Task TouchAsync(CancellationToken ct)
+    {
+        var entity = new TableEntity(PartitionKey, RowKey)
+        {
+            ["Updated"] = DateTimeOffset.UtcNow
+        };
+        await _tableClient.UpsertEntityAsync(entity, TableUpdateMode.Merge, ct);
+    }
+
     public async Task SaveStateAsync(SiteState state, CancellationToken ct)
     {
         var entity = new TableEntity(PartitionKey, RowKey)
