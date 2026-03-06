@@ -1,6 +1,6 @@
 var API_BASE =
   location.hostname === "localhost" || location.hostname === "127.0.0.1"
-    ? location.origin
+    ? "http://localhost:7071"
     : "";
 
 var DB_NAME = "khs-dog-monitor";
