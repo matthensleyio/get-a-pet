@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -5,23 +7,22 @@ using Api.Orchestrators;
 
 namespace Api.Functions;
 
-public sealed class MonitorTimerFunction(
+public sealed class MonitorHttpFunction(
     MonitorOrchestrator monitorOrchestrator,
-    ILogger<MonitorTimerFunction> logger)
+    ILogger<MonitorHttpFunction> logger)
 {
     private static readonly TimeZoneInfo CentralTimeZone =
         TimeZoneInfo.FindSystemTimeZoneById("Central Standard Time");
 
-    [Function("MonitorTimer")]
-    public async Task RunAsync(
-        [TimerTrigger("0 * * * * *")] TimerInfo myTimer,
+    [Function("Monitor")]
+    public async Task<IActionResult> RunAsync(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "monitor")] HttpRequest req,
         CancellationToken ct)
     {
         var centralNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, CentralTimeZone);
-
         if (centralNow.Hour < 5 || centralNow.Hour >= 20)
         {
-            return;
+            return new OkResult();
         }
 
         try
@@ -32,5 +33,7 @@ public sealed class MonitorTimerFunction(
         {
             logger.LogError(ex, "Error during dog monitor check");
         }
+
+        return new OkResult();
     }
 }

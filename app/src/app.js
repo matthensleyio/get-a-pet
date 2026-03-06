@@ -1,6 +1,6 @@
 var API_BASE =
   location.hostname === "localhost" || location.hostname === "127.0.0.1"
-    ? "http://localhost:5000"
+    ? "http://localhost:7071"
     : "";
 
 var DB_NAME = "khs-dog-monitor";
@@ -10,6 +10,32 @@ var POLL_INTERVAL = 30000;
 var SORT_KEY = "khs-sort";
 
 var pollTimer = null;
+var MONITOR_INTERVAL = 60000;
+var monitorTimer = null;
+
+function triggerMonitor() {
+  fetch(API_BASE + "/api/monitor", { method: "POST" }).catch(function () {});
+}
+
+function startMonitorTrigger() {
+  triggerMonitor();
+  monitorTimer = setInterval(triggerMonitor, MONITOR_INTERVAL);
+}
+
+function stopMonitorTrigger() {
+  if (monitorTimer !== null) {
+    clearInterval(monitorTimer);
+    monitorTimer = null;
+  }
+}
+
+document.addEventListener("visibilitychange", function () {
+  if (document.visibilityState === "hidden") {
+    stopMonitorTrigger();
+  } else {
+    startMonitorTrigger();
+  }
+});
 var currentDogs = null;
 var currentSort = localStorage.getItem(SORT_KEY) || "name";
 
@@ -418,3 +444,4 @@ if ("serviceWorker" in navigator) {
 initSortBar();
 initSubscribeButton();
 startPolling();
+startMonitorTrigger();
