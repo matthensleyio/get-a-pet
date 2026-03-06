@@ -108,6 +108,12 @@ body.offline .offline-banner {
   background: var(--color-danger);
 }
 
+.install-prompt {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
 .sort-bar {
   display: flex;
   align-items: center;

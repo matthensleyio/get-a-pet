@@ -37,7 +37,7 @@ document.addEventListener("visibilitychange", function () {
   }
 });
 var currentDogs = null;
-var currentSort = localStorage.getItem(SORT_KEY) || "name";
+var currentSort = localStorage.getItem(SORT_KEY) || "newest";
 
 function openDb() {
   return new Promise(function (resolve, reject) {
@@ -315,6 +315,11 @@ function initSubscribeButton() {
   var btn = document.getElementById("subscribe-btn");
 
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    var isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    var isStandalone = window.navigator.standalone === true;
+    if (isIos && !isStandalone) {
+      document.getElementById("install-prompt").hidden = false;
+    }
     return;
   }
 
