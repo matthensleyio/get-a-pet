@@ -8,4 +8,5 @@ public sealed record DogDto(
     string? PhotoUrl,
     string? Breed,
     string? ProfileUrl,
-    DateTimeOffset FirstSeen);
+    DateTimeOffset FirstSeen,
+    DateTimeOffset? IntakeDate);
