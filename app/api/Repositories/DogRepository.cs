@@ -66,6 +66,13 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
                 existing["ProfileUrl"] = dog.ProfileUrl;
                 existing["IntakeDate"] = dog.IntakeDate;
 
+                if (dog.Breed is not null) existing["Breed"] = dog.Breed;
+                if (dog.Color is not null) existing["Color"] = dog.Color;
+                if (dog.Size is not null) existing["Size"] = dog.Size;
+                if (dog.Weight is not null) existing["Weight"] = dog.Weight;
+                if (dog.AdoptionFee is not null) existing["AdoptionFee"] = dog.AdoptionFee;
+                if (dog.CurrentLocation is not null) existing["CurrentLocation"] = dog.CurrentLocation;
+
                 await _tableClient.UpdateEntityAsync(existing, existing.ETag, TableUpdateMode.Merge, ct);
             }
         }
