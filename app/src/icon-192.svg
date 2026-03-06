@@ -1,0 +1,29 @@
+<svg viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+  <!-- White background circle -->
+  <circle cx="96" cy="96" r="96" fill="white"/>
+
+  <!-- Blue circle border for PWA icon -->
+  <circle cx="96" cy="96" r="92" fill="none" stroke="#2563eb" stroke-width="4"/>
+
+  <!-- Dog head silhouette -->
+  <!-- Left ear -->
+  <ellipse cx="60" cy="55" rx="18" ry="28" fill="#2563eb" transform="rotate(-30 60 55)"/>
+
+  <!-- Right ear -->
+  <ellipse cx="132" cy="55" rx="18" ry="28" fill="#2563eb" transform="rotate(30 132 55)"/>
+
+  <!-- Head -->
+  <circle cx="96" cy="95" r="48" fill="#2563eb"/>
+
+  <!-- Snout -->
+  <ellipse cx="96" cy="120" rx="32" ry="28" fill="#2563eb"/>
+
+  <!-- Left eye -->
+  <circle cx="80" cy="85" r="6" fill="white"/>
+
+  <!-- Right eye -->
+  <circle cx="112" cy="85" r="6" fill="white"/>
+
+  <!-- Nose -->
+  <ellipse cx="96" cy="115" rx="8" ry="10" fill="white"/>
+</svg>

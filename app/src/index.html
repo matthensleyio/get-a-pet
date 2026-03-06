@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KHS Dog Monitor</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <link rel="icon" href="icon-192.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.svg">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>KHS Dog Monitor <span id="count-badge" class="count-badge" hidden>0</span></h1>
+      <div class="status-bar">
+        <span><span id="status-indicator" class="status-indicator"></span> <span id="status-text">Loading...</span></span>
+        <span id="last-checked"></span>
+        <button id="subscribe-btn" class="subscribe-btn" hidden>Subscribe</button>
+      </div>
+    </header>
+
+    <div id="offline-banner" class="offline-banner">
+      You are offline. Showing cached data. <span id="cache-age"></span>
+    </div>
+
+    <div id="dog-grid" class="dog-grid"></div>
+    <div id="empty-state" class="empty-state" hidden>
+      <p>No dogs found. Check back soon.</p>
+    </div>
+  </div>
+
+  <div id="modal-overlay" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-image-wrapper">
+        <button id="modal-close" class="modal-close">&times;</button>
+        <img id="modal-img" src="" alt="">
+      </div>
+      <div class="modal-body">
+        <h2 id="modal-name"></h2>
+        <div id="modal-details"></div>
+        <a id="modal-link" class="modal-link" href="#" target="_blank" rel="noopener">View Profile</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
