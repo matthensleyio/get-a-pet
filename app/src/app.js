@@ -4,7 +4,7 @@ var API_BASE =
     : "";
 
 var DB_NAME = "khs-dog-monitor";
-var DB_VERSION = 1;
+var DB_VERSION = 2;
 var STORE_NAME = "status";
 var POLL_INTERVAL = 30000;
 var SORT_KEY = "khs-sort";
