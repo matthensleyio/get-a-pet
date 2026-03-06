@@ -151,6 +151,11 @@ function sortDogs(dogs) {
     });
   } else if (currentSort === "newest") {
     sorted.sort(function (a, b) {
+      var aDays = a.daysAtShelter !== null ? a.daysAtShelter : 999;
+      var bDays = b.daysAtShelter !== null ? b.daysAtShelter : 999;
+      if (aDays !== bDays) {
+        return aDays - bDays;
+      }
       return new Date(b.firstSeen) - new Date(a.firstSeen);
     });
   } else {
@@ -182,7 +187,7 @@ function renderDogs(dogs) {
       var imgTag = imgSrc
         ? '<img src="' + imgSrc + '" alt="' + (dog.name || "Dog") + '" loading="lazy">'
         : '<img src="" alt="No photo" style="background:var(--border)">';
-      var isNew = dog.firstSeen && (Date.now() - new Date(dog.firstSeen).getTime()) < 86400000;
+      var isNew = dog.daysAtShelter === 0;
 
       return (
         '<div class="dog-card" data-aid="' +
