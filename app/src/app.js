@@ -149,23 +149,25 @@ function renderDogs(dogs) {
 
   empty.hidden = true;
   grid.innerHTML = dogs
-    .map(function (dog) {
+    .map(function (dog, index) {
       var imgSrc = dog.photoUrl || "";
       var imgTag = imgSrc
         ? '<img src="' + imgSrc + '" alt="' + (dog.name || "Dog") + '" loading="lazy">'
-        : '<img src="" alt="No photo" style="background:var(--color-border)">';
+        : '<img src="" alt="No photo" style="background:var(--border)">';
+      var isNew = dog.firstSeen && (Date.now() - new Date(dog.firstSeen).getTime()) < 86400000;
 
       return (
         '<div class="dog-card" data-aid="' +
         dog.aid +
-        '">' +
+        '" style="--i: ' + Math.min(index, 15) + '">' +
         imgTag +
+        (isNew ? '<span class="new-badge">New</span>' : '') +
         '<div class="dog-card-info">' +
         "<h3>" +
         (dog.name || "Unknown") +
         "</h3>" +
         "<p>" +
-        [dog.gender, dog.age].filter(Boolean).join(" / ") +
+        [dog.gender, dog.age].filter(Boolean).join(" &middot; ") +
         "</p>" +
         (dog.breed ? "<p>" + dog.breed + "</p>" : "") +
         "</div></div>"
@@ -311,6 +313,17 @@ function urlBase64ToUint8Array(base64String) {
   return arr;
 }
 
+function showIosBanner() {
+  if (localStorage.getItem("ios-banner-dismissed")) return;
+  var banner = document.getElementById("ios-install-banner");
+  banner.hidden = false;
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      banner.classList.add("visible");
+    });
+  });
+}
+
 function initSubscribeButton() {
   var btn = document.getElementById("subscribe-btn");
 
@@ -318,7 +331,7 @@ function initSubscribeButton() {
     var isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
     var isStandalone = window.navigator.standalone === true;
     if (isIos && !isStandalone) {
-      document.getElementById("install-prompt").hidden = false;
+      showIosBanner();
     }
     return;
   }
@@ -328,8 +341,17 @@ function initSubscribeButton() {
   navigator.serviceWorker.ready.then(function (reg) {
     reg.pushManager.getSubscription().then(function (sub) {
       if (sub) {
-        btn.textContent = "Unsubscribe";
+        btn.textContent = "Turn Off Alerts";
         btn.classList.add("subscribed");
+        var subJson = sub.toJSON();
+        fetch(API_BASE + "/api/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            endpoint: sub.endpoint,
+            keys: { p256dh: subJson.keys.p256dh, auth: subJson.keys.auth },
+          }),
+        }).catch(function () {});
       }
     });
   });
@@ -376,7 +398,7 @@ function subscribe(reg, btn) {
       });
     })
     .then(function () {
-      btn.textContent = "Unsubscribe";
+      btn.textContent = "Turn Off Alerts";
       btn.classList.add("subscribed");
     });
 }
@@ -398,7 +420,7 @@ function unsubscribe(sub, btn) {
       return sub.unsubscribe();
     })
     .then(function () {
-      btn.textContent = "Subscribe";
+      btn.textContent = "Get Alerts";
       btn.classList.remove("subscribed");
     });
 }
@@ -422,6 +444,13 @@ function initSortBar() {
     });
   });
 }
+
+document.getElementById("ios-banner-dismiss").addEventListener("click", function () {
+  var banner = document.getElementById("ios-install-banner");
+  banner.classList.remove("visible");
+  setTimeout(function () { banner.hidden = true; }, 500);
+  localStorage.setItem("ios-banner-dismissed", "1");
+});
 
 document.getElementById("modal-close").addEventListener("click", closeModal);
 document.getElementById("modal-overlay").addEventListener("click", function (e) {

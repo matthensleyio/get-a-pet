@@ -4,8 +4,8 @@
   "description": "Monitor new dogs at Kansas Humane Society",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#2563eb",
+  "background_color": "#F2F6EE",
+  "theme_color": "#2D5C1A",
   "icons": [
     {
       "src": "icon-192.png",

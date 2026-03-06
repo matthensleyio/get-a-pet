@@ -18,7 +18,7 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
         @"aid=(\d+)", RegexOptions.Compiled);
 
     private static readonly Regex NameRegex = new(
-        @"class=""results_animal_link"">([^<]+)</a>", RegexOptions.Compiled);
+        @"class=""results_animal_link"">([^<]+)", RegexOptions.Compiled);
 
     private static readonly Regex AgeRegex = new(
         @"results_animal_detail_data_Age"">([^<]+)<", RegexOptions.Compiled);

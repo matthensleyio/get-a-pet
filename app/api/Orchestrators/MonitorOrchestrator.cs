@@ -1,8 +1,11 @@
+using System.Net;
+
 using Microsoft.Extensions.Logging;
 
 using Api.DomainModels;
 using Api.Engines;
 using Api.Repositories;
+using WebPush;
 
 namespace Api.Orchestrators;
 
@@ -83,11 +86,18 @@ public sealed class MonitorOrchestrator(
         DomainModels.PushSubscription sub,
         CancellationToken ct)
     {
-        var success = await notificationEngine.SendAsync(payload, sub, ct);
-        if (!success)
+        try
         {
-            logger.LogWarning("Removing dead subscription: {Endpoint}", sub.Endpoint);
+            await notificationEngine.SendAsync(payload, sub, ct);
+        }
+        catch (WebPushException ex) when (ex.StatusCode is HttpStatusCode.Gone or HttpStatusCode.NotFound)
+        {
+            logger.LogWarning("Removing expired subscription: {Endpoint}", sub.Endpoint);
             await subscriptionRepository.RemoveByEndpointAsync(sub.Endpoint, ct);
+        }
+        catch (WebPushException ex)
+        {
+            logger.LogWarning("Transient push failure for {Endpoint}: {Message}", sub.Endpoint, ex.Message);
         }
     }
 

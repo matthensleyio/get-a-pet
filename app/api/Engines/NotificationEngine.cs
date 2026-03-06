@@ -38,7 +38,7 @@ public sealed class NotificationEngine(IConfiguration configuration)
             dog.ProfileUrl);
     }
 
-    public async Task<bool> SendAsync(
+    public async Task SendAsync(
         NotificationPayload payload,
         DomainModels.PushSubscription subscription,
         CancellationToken ct)
@@ -63,15 +63,6 @@ public sealed class NotificationEngine(IConfiguration configuration)
         });
 
         var client = new WebPushClient();
-
-        try
-        {
-            await client.SendNotificationAsync(pushSubscription, json, vapidDetails, ct);
-            return true;
-        }
-        catch (WebPushException)
-        {
-            return false;
-        }
+        await client.SendNotificationAsync(pushSubscription, json, vapidDetails, ct);
     }
 }
