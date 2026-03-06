@@ -1,41 +1,51 @@
 using System.Text.Json;
 
-using Microsoft.EntityFrameworkCore;
+using Azure;
+using Azure.Data.Tables;
 
 using Api.DomainModels;
 
 namespace Api.Repositories;
 
-public sealed class StateRepository(DogMonitorDbContext db)
+public sealed class StateRepository(TableServiceClient tableServiceClient)
 {
+    private readonly TableClient _tableClient = tableServiceClient.GetTableClient("SiteState");
+
+    private const string PartitionKey = "state";
+    private const string RowKey = "latest";
+
     public async Task<SiteState?> GetStateAsync(CancellationToken ct)
     {
-        var record = await db.SiteStates.FirstOrDefaultAsync(ct);
-        if (record is null)
+        try
+        {
+            var response = await _tableClient.GetEntityAsync<TableEntity>(PartitionKey, RowKey, cancellationToken: ct);
+            var entity = response.Value;
+
+            var aids = JsonSerializer.Deserialize<List<string>>(entity.GetString("KnownAidsJson") ?? "[]") ?? [];
+            var dogs = JsonSerializer.Deserialize<Dictionary<string, string>>(entity.GetString("KnownDogsJson") ?? "{}") ?? [];
+
+            return new SiteState(
+                entity.GetInt32("Count") ?? 0,
+                aids,
+                dogs,
+                entity.GetDateTimeOffset("Updated") ?? DateTimeOffset.UtcNow);
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
         {
             return null;
         }
-
-        var aids = JsonSerializer.Deserialize<List<string>>(record.KnownAidsJson) ?? [];
-        var dogs = JsonSerializer.Deserialize<Dictionary<string, string>>(record.KnownDogsJson) ?? [];
-
-        return new SiteState(record.Count, aids, dogs, record.Updated);
     }
 
     public async Task SaveStateAsync(SiteState state, CancellationToken ct)
     {
-        var record = await db.SiteStates.FirstOrDefaultAsync(ct);
-        if (record is null)
+        var entity = new TableEntity(PartitionKey, RowKey)
         {
-            record = new SiteStateRecord();
-            db.SiteStates.Add(record);
-        }
+            ["Count"] = state.Count,
+            ["KnownAidsJson"] = JsonSerializer.Serialize(state.KnownAids),
+            ["KnownDogsJson"] = JsonSerializer.Serialize(state.KnownDogs),
+            ["Updated"] = state.Updated
+        };
 
-        record.Count = state.Count;
-        record.KnownAidsJson = JsonSerializer.Serialize(state.KnownAids);
-        record.KnownDogsJson = JsonSerializer.Serialize(state.KnownDogs);
-        record.Updated = state.Updated;
-
-        await db.SaveChangesAsync(ct);
+        await _tableClient.UpsertEntityAsync(entity, TableUpdateMode.Replace, ct);
     }
 }

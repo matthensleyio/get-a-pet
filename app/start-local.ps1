@@ -3,11 +3,11 @@ $ErrorActionPreference = 'Stop'
 Write-Host "Starting KHS Dog Monitor (local dev)..." -ForegroundColor Cyan
 
 $apiJob = Start-Job -ScriptBlock {
-    Set-Location $using:PSScriptRoot
-    dotnet run --project api/
+    Set-Location "$using:PSScriptRoot/api"
+    func start
 }
 
-Start-Sleep -Seconds 3
+Start-Sleep -Seconds 5
 
 $frontendJob = Start-Job -ScriptBlock {
     Set-Location "$using:PSScriptRoot/src"
@@ -15,7 +15,7 @@ $frontendJob = Start-Job -ScriptBlock {
 }
 
 Write-Host ""
-Write-Host "API:      http://localhost:5000" -ForegroundColor Green
+Write-Host "API:      http://localhost:7071" -ForegroundColor Green
 Write-Host "Frontend: http://localhost:3000" -ForegroundColor Green
 Write-Host ""
 Write-Host "Press Ctrl+C to stop both servers" -ForegroundColor Yellow

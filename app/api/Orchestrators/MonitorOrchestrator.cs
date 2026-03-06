@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+
 using Api.DomainModels;
 using Api.Engines;
 using Api.Repositories;

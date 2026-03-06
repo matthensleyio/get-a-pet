@@ -435,3 +435,6 @@ FodyWeavers.xsd
 # Runtime state
 state.json
 .claude/
+
+# Azure Functions local settings (contains secrets)
+app/api/local.settings.json

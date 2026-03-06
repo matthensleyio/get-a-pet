@@ -1,60 +1,94 @@
-using Microsoft.EntityFrameworkCore;
+using Azure;
+using Azure.Data.Tables;
 
 using Api.DomainModels;
 
 namespace Api.Repositories;
 
-public sealed class DogRepository(DogMonitorDbContext db)
+public sealed class DogRepository(TableServiceClient tableServiceClient)
 {
+    private readonly TableClient _tableClient = tableServiceClient.GetTableClient("Dogs");
+
     public async Task<IReadOnlyList<Dog>> GetAllDogsAsync(CancellationToken ct)
     {
-        var records = await db.Dogs.AsNoTracking().ToListAsync(ct);
+        var dogs = new List<Dog>();
 
-        return records
-            .Select(r => new Dog(r.Aid, r.Name, r.Age, r.Gender, r.PhotoUrl, r.Breed, r.ProfileUrl, r.FirstSeen))
-            .ToList();
+        await foreach (var entity in _tableClient.QueryAsync<TableEntity>(cancellationToken: ct))
+        {
+            dogs.Add(MapToDog(entity));
+        }
+
+        return dogs;
     }
 
     public async Task UpsertDogsAsync(IReadOnlyList<Dog> dogs, CancellationToken ct)
     {
         foreach (var dog in dogs)
         {
-            var existing = await db.Dogs.FindAsync([dog.Aid], ct);
+            TableEntity? existing = null;
+
+            try
+            {
+                var response = await _tableClient.GetEntityAsync<TableEntity>("dog", dog.Aid, cancellationToken: ct);
+                existing = response.Value;
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404)
+            {
+            }
+
             if (existing is null)
             {
-                db.Dogs.Add(new DogRecord
+                var entity = new TableEntity("dog", dog.Aid)
                 {
-                    Aid = dog.Aid,
-                    Name = dog.Name,
-                    Age = dog.Age,
-                    Gender = dog.Gender,
-                    PhotoUrl = dog.PhotoUrl,
-                    Breed = dog.Breed,
-                    ProfileUrl = dog.ProfileUrl,
-                    FirstSeen = DateTimeOffset.UtcNow
-                });
+                    ["Name"] = dog.Name,
+                    ["Age"] = dog.Age,
+                    ["Gender"] = dog.Gender,
+                    ["PhotoUrl"] = dog.PhotoUrl,
+                    ["Breed"] = dog.Breed,
+                    ["ProfileUrl"] = dog.ProfileUrl,
+                    ["FirstSeen"] = DateTimeOffset.UtcNow
+                };
+
+                await _tableClient.AddEntityAsync(entity, ct);
             }
             else
             {
-                existing.Name = dog.Name;
-                existing.Age = dog.Age;
-                existing.Gender = dog.Gender;
-                existing.PhotoUrl = dog.PhotoUrl;
-                existing.Breed = dog.Breed;
-                existing.ProfileUrl = dog.ProfileUrl;
+                existing["Name"] = dog.Name;
+                existing["Age"] = dog.Age;
+                existing["Gender"] = dog.Gender;
+                existing["PhotoUrl"] = dog.PhotoUrl;
+                existing["Breed"] = dog.Breed;
+                existing["ProfileUrl"] = dog.ProfileUrl;
+
+                await _tableClient.UpdateEntityAsync(existing, existing.ETag, TableUpdateMode.Merge, ct);
             }
         }
-
-        await db.SaveChangesAsync(ct);
     }
 
     public async Task RemoveDogsAsync(IReadOnlyList<string> aids, CancellationToken ct)
     {
-        var records = await db.Dogs
-            .Where(r => aids.Contains(r.Aid))
-            .ToListAsync(ct);
+        foreach (var aid in aids)
+        {
+            try
+            {
+                await _tableClient.DeleteEntityAsync("dog", aid, cancellationToken: ct);
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404)
+            {
+            }
+        }
+    }
 
-        db.Dogs.RemoveRange(records);
-        await db.SaveChangesAsync(ct);
+    private static Dog MapToDog(TableEntity entity)
+    {
+        return new Dog(
+            entity.RowKey,
+            entity.GetString("Name"),
+            entity.GetString("Age"),
+            entity.GetString("Gender"),
+            entity.GetString("PhotoUrl"),
+            entity.GetString("Breed"),
+            entity.GetString("ProfileUrl"),
+            entity.GetDateTimeOffset("FirstSeen") ?? DateTimeOffset.UtcNow);
     }
 }
