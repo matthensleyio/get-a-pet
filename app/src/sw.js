@@ -95,6 +95,7 @@ self.addEventListener("push", function (event) {
     self.registration.showNotification(data.title, {
       body: data.body,
       icon: data.icon || "/icon-192.svg",
+      image: data.icon || undefined,
       badge: "/badge-72.svg",
       data: data.data || {},
     })
