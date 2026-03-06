@@ -43,7 +43,9 @@ function openDb() {
   return new Promise(function (resolve, reject) {
     var req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = function () {
-      req.result.createObjectStore(STORE_NAME);
+      if (!req.result.objectStoreNames.contains(STORE_NAME)) {
+        req.result.createObjectStore(STORE_NAME);
+      }
     };
     req.onsuccess = function () {
       resolve(req.result);
