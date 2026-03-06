@@ -14,7 +14,33 @@ var MONITOR_INTERVAL = 60000;
 var monitorTimer = null;
 
 function triggerMonitor() {
-  fetch(API_BASE + "/api/monitor", { method: "POST" }).catch(function () {});
+  fetch(API_BASE + "/api/monitor", { method: "POST" })
+    .then(function (res) {
+      if (res.ok) {
+        return res.json().then(function (body) {
+          if (!body.offline) {
+            fetchStatus();
+          }
+        });
+      }
+      if (res.status === 500) {
+        return res.json().then(function (problem) {
+          setMonitorError(problem.detail || problem.title || "Monitor check failed");
+        }).catch(function () {
+          setMonitorError("Monitor check failed");
+        });
+      }
+    })
+    .catch(function () {});
+}
+
+function setMonitorError(message) {
+  var indicator = document.getElementById("status-indicator");
+  var statusText = document.getElementById("status-text");
+  indicator.classList.remove("inactive");
+  indicator.classList.add("error");
+  statusText.textContent = "Monitor Error";
+  console.error("Monitor error:", message);
 }
 
 function startMonitorTrigger() {
@@ -241,6 +267,7 @@ function updateStatus(data, fromCache) {
   var countBadge = document.getElementById("count-badge");
   var cacheAge = document.getElementById("cache-age");
 
+  indicator.classList.remove("error");
   if (data.isMonitoringActive) {
     indicator.classList.remove("inactive");
     statusText.textContent = "Monitoring";

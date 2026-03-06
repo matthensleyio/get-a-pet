@@ -143,6 +143,11 @@ body.offline #content-wrapper {
   animation: none;
 }
 
+.status-indicator.error {
+  background: #E53E3E;
+  animation: none;
+}
+
 .last-checked {
   font-size: 0.78rem;
   color: var(--text-muted);

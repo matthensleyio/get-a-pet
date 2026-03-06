@@ -22,18 +22,28 @@ public sealed class MonitorHttpFunction(
         var centralNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, CentralTimeZone);
         if (centralNow.Hour < 5 || centralNow.Hour >= 20)
         {
-            return new OkResult();
+            return new BadRequestObjectResult($"Monitor is outside active hours. Current Central time: {centralNow:HH:mm}. Active window: 05:00–20:00.");
         }
 
         try
         {
-            await monitorOrchestrator.CheckAsync(ct);
+            await monitorOrchestrator.CheckAsync(CancellationToken.None);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogError(ex, "Error during dog monitor check");
+
+            return new ObjectResult(new ProblemDetails
+            {
+                Title = "Monitor check failed",
+                Detail = ex.ToString(),
+                Status = StatusCodes.Status500InternalServerError
+            })
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
         }
 
-        return new OkResult();
+        return new OkObjectResult("Monitor check completed successfully.");
     }
 }
