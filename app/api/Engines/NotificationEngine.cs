@@ -14,6 +14,11 @@ public sealed class NotificationEngine(IConfiguration configuration)
     {
         var bodyParts = new List<string>();
 
+        if (dog.Breed is not null)
+        {
+            bodyParts.Add($"Breed: {dog.Breed}");
+        }
+
         if (dog.Gender is not null)
         {
             bodyParts.Add(dog.Gender);
@@ -24,15 +29,10 @@ public sealed class NotificationEngine(IConfiguration configuration)
             bodyParts.Add(dog.Age);
         }
 
-        var body = String.Join(", ", bodyParts);
-
-        if (dog.Breed is not null)
-        {
-            body += $"\nBreed: {dog.Breed}";
-        }
+        var body = String.Join(" - ", bodyParts);
 
         return new NotificationPayload(
-            $"New Dog: {dog.Name}",
+            $"{dog.Name} is available for adoption!",
             body,
             dog.PhotoUrl,
             dog.ProfileUrl);
