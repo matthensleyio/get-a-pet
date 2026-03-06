@@ -2,6 +2,7 @@ using Azure.Data.Tables;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 using Api.Engines;
 using Api.Orchestrators;
@@ -17,7 +18,9 @@ public sealed class Program
             .ConfigureFunctionsWebApplication()
             .ConfigureServices((ctx, services) =>
             {
-                services.AddSingleton(_ => new TableServiceClient(ctx.Configuration["AzureWebJobsStorage"]));
+                var connectionString = ctx.Configuration["AzureWebJobsStorage"]
+                    ?? ctx.Configuration["STORAGE_CONNECTION_STRING"];
+                services.AddSingleton(_ => new TableServiceClient(connectionString));
                 services.AddHttpClient("PetBridge", c => c.Timeout = TimeSpan.FromSeconds(30));
 
                 services.AddScoped<StateRepository>();
@@ -33,10 +36,18 @@ public sealed class Program
             })
             .Build();
 
-        var tables = host.Services.GetRequiredService<TableServiceClient>();
-        await tables.CreateTableIfNotExistsAsync("Dogs");
-        await tables.CreateTableIfNotExistsAsync("SiteState");
-        await tables.CreateTableIfNotExistsAsync("PushSubscriptions");
+        var logger = host.Services.GetRequiredService<ILogger<Program>>();
+        try
+        {
+            var tables = host.Services.GetRequiredService<TableServiceClient>();
+            await tables.CreateTableIfNotExistsAsync("Dogs");
+            await tables.CreateTableIfNotExistsAsync("SiteState");
+            await tables.CreateTableIfNotExistsAsync("PushSubscriptions");
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Table pre-creation failed; tables will be created on first use");
+        }
 
         await host.RunAsync();
     }
