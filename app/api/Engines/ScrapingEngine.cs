@@ -53,6 +53,9 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
     private static readonly Regex LocationRegex = new(
         @"Location:</span>\s*([^<]+)", RegexOptions.Compiled);
 
+    private static readonly Regex DaysOldRegex = new(
+        @"days_old_(\d+)", RegexOptions.Compiled);
+
     public async Task<IReadOnlyList<Dog>> GetAllDogsAsync(CancellationToken ct)
     {
         var client = httpClientFactory.CreateClient("PetBridge");
@@ -76,8 +79,12 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
             var gender = ExtractGroup(GenderRegex, cardHtml);
             var photoUrl = ExtractPhotoUrl(cardHtml);
             var profileUrl = String.Format(ProfileUrlTemplate, aid);
+            var daysOldMatch = DaysOldRegex.Match(cardHtml);
+            DateTimeOffset? intakeDate = daysOldMatch.Success
+                ? DateTimeOffset.UtcNow.Date.AddDays(-Int32.Parse(daysOldMatch.Groups[1].Value))
+                : null;
 
-            dogs.Add(new Dog(aid, name, age, gender, photoUrl, null, null, null, null, null, null, profileUrl, default));
+            dogs.Add(new Dog(aid, name, age, gender, photoUrl, null, null, null, null, null, null, profileUrl, default, intakeDate));
         }
 
         return dogs;
