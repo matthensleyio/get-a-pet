@@ -7,4 +7,5 @@ public sealed record Dog(
     string? Gender,
     string? PhotoUrl,
     string? Breed,
-    string? ProfileUrl);
+    string? ProfileUrl,
+    DateTimeOffset FirstSeen);

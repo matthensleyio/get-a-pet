@@ -11,7 +11,7 @@ public sealed class DogRepository(DogMonitorDbContext db)
         var records = await db.Dogs.AsNoTracking().ToListAsync(ct);
 
         return records
-            .Select(r => new Dog(r.Aid, r.Name, r.Age, r.Gender, r.PhotoUrl, r.Breed, r.ProfileUrl))
+            .Select(r => new Dog(r.Aid, r.Name, r.Age, r.Gender, r.PhotoUrl, r.Breed, r.ProfileUrl, r.FirstSeen))
             .ToList();
     }
 

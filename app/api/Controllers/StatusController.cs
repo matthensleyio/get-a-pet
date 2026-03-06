@@ -15,7 +15,7 @@ public sealed class StatusController(StatusOrchestrator statusOrchestrator) : Co
         var result = await statusOrchestrator.GetStatusAsync(ct);
 
         var dogDtos = result.Dogs
-            .Select(d => new DogDto(d.Aid, d.Name, d.Age, d.Gender, d.PhotoUrl, d.Breed, d.ProfileUrl))
+            .Select(d => new DogDto(d.Aid, d.Name, d.Age, d.Gender, d.PhotoUrl, d.Breed, d.ProfileUrl, d.FirstSeen))
             .ToList();
 
         return Ok(new StatusResponseDto(dogDtos, result.Count, result.LastChecked, result.IsMonitoringActive));

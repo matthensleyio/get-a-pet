@@ -80,7 +80,7 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
             var photoUrl = ExtractPhotoUrl(cardHtml);
             var profileUrl = String.Format(ProfileUrlTemplate, aid);
 
-            dogs.Add(new Dog(aid, name, age, gender, photoUrl, null, profileUrl));
+            dogs.Add(new Dog(aid, name, age, gender, photoUrl, null, profileUrl, default));
         }
 
         return dogs;

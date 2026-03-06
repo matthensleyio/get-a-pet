@@ -7,8 +7,11 @@ var DB_NAME = "khs-dog-monitor";
 var DB_VERSION = 1;
 var STORE_NAME = "status";
 var POLL_INTERVAL = 30000;
+var SORT_KEY = "khs-sort";
 
 var pollTimer = null;
+var currentDogs = null;
+var currentSort = localStorage.getItem(SORT_KEY) || "name";
 
 function openDb() {
   return new Promise(function (resolve, reject) {
@@ -73,7 +76,40 @@ function timeAgo(dateStr) {
   return days + "d ago";
 }
 
+function parseAgeMonths(ageStr) {
+  if (!ageStr) return Number.MAX_SAFE_INTEGER;
+  var s = ageStr.toLowerCase();
+  var years = 0;
+  var months = 0;
+  var ym = s.match(/(\d+)\s*year/);
+  if (ym) years = parseInt(ym[1], 10);
+  var mm = s.match(/(\d+)\s*month/);
+  if (mm) months = parseInt(mm[1], 10);
+  if (years === 0 && months === 0) return Number.MAX_SAFE_INTEGER;
+  return years * 12 + months;
+}
+
+function sortDogs(dogs) {
+  var sorted = dogs.slice();
+  if (currentSort === "age") {
+    sorted.sort(function (a, b) {
+      return parseAgeMonths(a.age) - parseAgeMonths(b.age);
+    });
+  } else if (currentSort === "newest") {
+    sorted.sort(function (a, b) {
+      return new Date(b.firstSeen) - new Date(a.firstSeen);
+    });
+  } else {
+    sorted.sort(function (a, b) {
+      return (a.name || "").localeCompare(b.name || "");
+    });
+  }
+  return sorted;
+}
+
 function renderDogs(dogs) {
+  currentDogs = dogs || null;
+
   var grid = document.getElementById("dog-grid");
   var empty = document.getElementById("empty-state");
 
@@ -82,6 +118,8 @@ function renderDogs(dogs) {
     empty.hidden = false;
     return;
   }
+
+  var dogs = sortDogs(dogs);
 
   empty.hidden = true;
   grid.innerHTML = dogs
@@ -334,6 +372,26 @@ function unsubscribe(sub, btn) {
     });
 }
 
+function initSortBar() {
+  var buttons = document.querySelectorAll(".sort-btn");
+  buttons.forEach(function (btn) {
+    if (btn.dataset.sort === currentSort) {
+      btn.classList.add("active");
+    }
+    btn.addEventListener("click", function () {
+      if (btn.dataset.sort === currentSort) return;
+      currentSort = btn.dataset.sort;
+      localStorage.setItem(SORT_KEY, currentSort);
+      buttons.forEach(function (b) {
+        b.classList.toggle("active", b.dataset.sort === currentSort);
+      });
+      if (currentDogs) {
+        renderDogs(currentDogs);
+      }
+    });
+  });
+}
+
 document.getElementById("modal-close").addEventListener("click", closeModal);
 document.getElementById("modal-overlay").addEventListener("click", function (e) {
   if (e.target === this) {
@@ -357,5 +415,6 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js");
 }
 
+initSortBar();
 initSubscribeButton();
 startPolling();
