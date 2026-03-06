@@ -1,4 +1,4 @@
-var CACHE_NAME = "khs-dog-monitor-v1";
+var CACHE_NAME = "khs-dog-monitor-v2";
 var SHELL_FILES = ["/", "/index.html", "/styles.css", "/app.js", "/manifest.json"];
 var PHOTO_CACHE = "khs-dog-photos-v1";
 
@@ -65,9 +65,18 @@ self.addEventListener("fetch", function (event) {
   }
 
   event.respondWith(
-    caches.match(event.request).then(function (cached) {
-      return cached || fetch(event.request);
-    })
+    fetch(event.request)
+      .then(function (response) {
+        if (response.ok) {
+          caches.open(CACHE_NAME).then(function (cache) {
+            cache.put(event.request, response.clone());
+          });
+        }
+        return response;
+      })
+      .catch(function () {
+        return caches.match(event.request);
+      })
   );
 });
 

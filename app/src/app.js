@@ -472,7 +472,13 @@ if (!navigator.onLine) {
 }
 
 if ("serviceWorker" in navigator) {
+  var prevController = navigator.serviceWorker.controller;
   navigator.serviceWorker.register("/sw.js");
+  navigator.serviceWorker.addEventListener("controllerchange", function () {
+    if (prevController) {
+      location.reload();
+    }
+  });
 }
 
 initSortBar();
