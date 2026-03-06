@@ -141,7 +141,7 @@ function Save-State {
 }
 
 Import-Module BurntToast -ErrorAction Stop
-Write-Host "KHS Dog Monitor started at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+Write-Host "get-a-pet started at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 Write-Host "Checking every $IntervalSeconds seconds (active 5am-8pm Central)"
 Write-Host "Press Ctrl+C to stop"
 Write-Host ""

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-A PWA + Azure Functions app that monitors kshumane.org (via petbridge.org) for newly listed dogs and sends web push notifications. It replaces `Monitor-Dogs.ps1`.
+**get-a-pet** — A PWA + Azure Functions app that monitors kshumane.org (via petbridge.org) for newly listed dogs and sends web push notifications. It replaces `Monitor-Dogs.ps1`.
 
 ## Commands
 

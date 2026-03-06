@@ -1,4 +1,4 @@
-# KHS Dog Monitor
+# get-a-pet
 
 A PWA + Azure Functions app that monitors [kshumane.org](https://kshumane.org) (via petbridge.org) for newly listed dogs and sends web push notifications.
 

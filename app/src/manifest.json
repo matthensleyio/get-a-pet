@@ -1,6 +1,6 @@
 {
-  "name": "KHS Dog Monitor",
-  "short_name": "Dog Monitor",
+  "name": "get-a-pet",
+  "short_name": "get-a-pet",
   "description": "Monitor new dogs at Kansas Humane Society",
   "start_url": "/",
   "display": "standalone",

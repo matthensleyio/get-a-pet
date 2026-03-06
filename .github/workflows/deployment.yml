@@ -20,7 +20,7 @@ jobs:
       - name: Stamp build version
         run: |
           SHORT="${GITHUB_SHA:0:8}"
-          sed -i "s/khs-dog-monitor-v[0-9]*/khs-dog-monitor-${SHORT}/g" app/src/sw.js
+          sed -i "s/get-a-pet-v[0-9]*/get-a-pet-${SHORT}/g" app/src/sw.js
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1

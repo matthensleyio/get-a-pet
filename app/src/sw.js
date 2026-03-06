@@ -1,6 +1,6 @@
-var CACHE_NAME = "khs-dog-monitor-v2";
+var CACHE_NAME = "get-a-pet-v2";
 var SHELL_FILES = ["/", "/index.html", "/styles.css", "/app.js", "/manifest.json"];
-var PHOTO_CACHE = "khs-dog-photos-v1";
+var PHOTO_CACHE = "get-a-pet-photos-v1";
 
 self.addEventListener("install", function (event) {
   event.waitUntil(
@@ -81,7 +81,7 @@ self.addEventListener("fetch", function (event) {
 });
 
 self.addEventListener("push", function (event) {
-  var data = { title: "KHS Dog Monitor", body: "New update available" };
+  var data = { title: "get-a-pet", body: "New update available" };
 
   if (event.data) {
     try {

@@ -3,7 +3,7 @@ var API_BASE =
     ? "http://localhost:7071"
     : "";
 
-var DB_NAME = "khs-dog-monitor";
+var DB_NAME = "get-a-pet";
 var DB_VERSION = 2;
 var STORE_NAME = "status";
 var POLL_INTERVAL = 30000;

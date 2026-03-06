@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 
-Write-Host "Starting KHS Dog Monitor (local dev)..." -ForegroundColor Cyan
+Write-Host "Starting get-a-pet (local dev)..." -ForegroundColor Cyan
 
 $apiJob = Start-Job -ScriptBlock {
     Set-Location "$using:PSScriptRoot/api"
