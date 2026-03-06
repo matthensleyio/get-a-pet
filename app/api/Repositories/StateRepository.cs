@@ -25,7 +25,6 @@ public sealed class StateRepository(TableServiceClient tableServiceClient)
             var dogs = JsonSerializer.Deserialize<Dictionary<string, string>>(entity.GetString("KnownDogsJson") ?? "{}") ?? [];
 
             return new SiteState(
-                entity.GetInt32("Count") ?? 0,
                 aids,
                 dogs,
                 entity.GetDateTimeOffset("Updated") ?? DateTimeOffset.UtcNow);
@@ -36,20 +35,10 @@ public sealed class StateRepository(TableServiceClient tableServiceClient)
         }
     }
 
-    public async Task TouchAsync(CancellationToken ct)
-    {
-        var entity = new TableEntity(PartitionKey, RowKey)
-        {
-            ["Updated"] = DateTimeOffset.UtcNow
-        };
-        await _tableClient.UpsertEntityAsync(entity, TableUpdateMode.Merge, ct);
-    }
-
     public async Task SaveStateAsync(SiteState state, CancellationToken ct)
     {
         var entity = new TableEntity(PartitionKey, RowKey)
         {
-            ["Count"] = state.Count,
             ["KnownAidsJson"] = JsonSerializer.Serialize(state.KnownAids),
             ["KnownDogsJson"] = JsonSerializer.Serialize(state.KnownDogs),
             ["Updated"] = state.Updated

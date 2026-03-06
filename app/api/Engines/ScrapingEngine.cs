@@ -6,13 +6,9 @@ namespace Api.Engines;
 
 public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
 {
-    private const string CountUrl = "https://petbridge.org/animals/animals-count-available.php?ClientID=2&Species=Dog";
     private const string ListUrl = "https://petbridge.org/animals/animals-all-responsive.php?ClientID=2&Species=Dog";
     private const string DetailUrlTemplate = "https://petbridge.org/animals/animals-detail.php?ID={0}&ClientID=2&Species=Dog";
     private const string ProfileUrlTemplate = "https://kshumane.org/adoption/pet-details/?aid={0}&cid=2&tid=Dog";
-
-    private static readonly Regex CountRegex = new(
-        @"<span class=""counter"">(\d+)", RegexOptions.Compiled);
 
     private static readonly Regex CardRegex = new(
         @"(?s)<div class=""animal_list_box[^""]*""[^>]*>.*?</div>\s*</div>\s*<!-- animal_list_box -->",
@@ -41,20 +37,6 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
 
     private static readonly Regex BreedRegex = new(
         @"Breed:</span>\s*([^<]+)", RegexOptions.Compiled);
-
-    public async Task<int> GetDogCountAsync(CancellationToken ct)
-    {
-        var client = httpClientFactory.CreateClient("PetBridge");
-        var html = await client.GetStringAsync(CountUrl, ct);
-        var match = CountRegex.Match(html);
-
-        if (!match.Success)
-        {
-            throw new InvalidOperationException("Could not parse dog count from response");
-        }
-
-        return Int32.Parse(match.Groups[1].Value);
-    }
 
     public async Task<IReadOnlyList<Dog>> GetAllDogsAsync(CancellationToken ct)
     {

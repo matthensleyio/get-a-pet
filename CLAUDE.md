@@ -40,16 +40,16 @@ curl -X POST http://localhost:7071/api/monitor
 HTTP POST /api/monitor
   -> MonitorHttpFunction (time-guard: skip outside 5am-8pm Central)
     -> MonitorOrchestrator.CheckAsync()
-      -> ScrapingEngine.GetDogCountAsync()  [fast count check]
-      -> [if count changed] ScrapingEngine.GetAllDogsAsync()
+      -> ScrapingEngine.GetAllDogsAsync()
       -> DogDiffEngine.ComputeDiff()
       -> [new dogs] ScrapingEngine.GetDogBreedAsync() [per dog, parallel]
       -> NotificationEngine.SendAsync() [per dog, per subscriber]
+      -> DogRepository.RemoveDogsAsync() [removed dogs]
       -> DogRepository.UpsertDogsAsync()
       -> StateRepository.SaveStateAsync()
 ```
 
-The monitor uses a two-phase scrape: cheap count check first, full scrape only on change.
+Every monitor invocation does a full scrape and replaces the stored dog list.
 
 ### Layer Boundaries
 

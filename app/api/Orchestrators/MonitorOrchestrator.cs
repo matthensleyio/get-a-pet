@@ -17,24 +17,15 @@ public sealed class MonitorOrchestrator(
 {
     public async Task CheckAsync(CancellationToken ct)
     {
-        var currentCount = await scrapingEngine.GetDogCountAsync(ct);
         var state = await stateRepository.GetStateAsync(ct);
+        var currentDogs = await scrapingEngine.GetAllDogsAsync(ct);
 
         if (state is null)
         {
-            await HandleFirstRunAsync(currentCount, ct);
+            await HandleFirstRunAsync(currentDogs, ct);
             return;
         }
 
-        if (currentCount == state.Count)
-        {
-            await stateRepository.TouchAsync(ct);
-            return;
-        }
-
-        logger.LogInformation("Count changed from {Old} to {New}, checking for changes", state.Count, currentCount);
-
-        var currentDogs = await scrapingEngine.GetAllDogsAsync(ct);
         var diff = dogDiffEngine.ComputeDiff(currentDogs, state);
 
         if (diff.NewDogs.Count > 0)
@@ -49,16 +40,15 @@ public sealed class MonitorOrchestrator(
         }
 
         await dogRepository.UpsertDogsAsync(currentDogs, ct);
-        await SaveCurrentStateAsync(currentCount, currentDogs, ct);
+        await SaveCurrentStateAsync(currentDogs, ct);
     }
 
-    private async Task HandleFirstRunAsync(int count, CancellationToken ct)
+    private async Task HandleFirstRunAsync(IReadOnlyList<Dog> dogs, CancellationToken ct)
     {
-        logger.LogInformation("First run, capturing initial state with count {Count}", count);
+        logger.LogInformation("First run, capturing initial state with {Count} dog(s)", dogs.Count);
 
-        var dogs = await scrapingEngine.GetAllDogsAsync(ct);
         await dogRepository.UpsertDogsAsync(dogs, ct);
-        await SaveCurrentStateAsync(count, dogs, ct);
+        await SaveCurrentStateAsync(dogs, ct);
     }
 
     private async Task HandleNewDogsAsync(IReadOnlyList<Dog> newDogs, CancellationToken ct)
@@ -101,14 +91,11 @@ public sealed class MonitorOrchestrator(
         }
     }
 
-    private async Task SaveCurrentStateAsync(
-        int count,
-        IReadOnlyList<Dog> dogs,
-        CancellationToken ct)
+    private async Task SaveCurrentStateAsync(IReadOnlyList<Dog> dogs, CancellationToken ct)
     {
         var aids = dogs.Select(d => d.Aid).ToList();
         var dogMap = dogs.ToDictionary(d => d.Aid, d => d.Name ?? "Unknown");
-        var state = new SiteState(count, aids, dogMap, DateTimeOffset.UtcNow);
+        var state = new SiteState(aids, dogMap, DateTimeOffset.UtcNow);
 
         await stateRepository.SaveStateAsync(state, ct);
     }
