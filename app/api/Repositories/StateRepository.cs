@@ -27,7 +27,8 @@ public sealed class StateRepository(TableServiceClient tableServiceClient)
             return new SiteState(
                 aids,
                 dogs,
-                entity.GetDateTimeOffset("Updated") ?? DateTimeOffset.UtcNow);
+                entity.GetDateTimeOffset("Updated") ?? DateTimeOffset.UtcNow,
+                entity.GetDateTimeOffset("LastPetfinderFetch"));
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
         {
@@ -41,7 +42,8 @@ public sealed class StateRepository(TableServiceClient tableServiceClient)
         {
             ["KnownAidsJson"] = JsonSerializer.Serialize(state.KnownAids),
             ["KnownDogsJson"] = JsonSerializer.Serialize(state.KnownDogs),
-            ["Updated"] = state.Updated
+            ["Updated"] = state.Updated,
+            ["LastPetfinderFetch"] = state.LastPetfinderFetch
         };
 
         await _tableClient.UpsertEntityAsync(entity, TableUpdateMode.Replace, ct);

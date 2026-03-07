@@ -2,6 +2,7 @@ namespace Api.Dtos;
 
 public sealed record DogDto(
     string Aid,
+    string Shelter,
     string? Name,
     string? Age,
     string? Gender,

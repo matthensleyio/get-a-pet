@@ -17,7 +17,7 @@ public sealed class StatusFunction(StatusOrchestrator statusOrchestrator)
         var result = await statusOrchestrator.GetStatusAsync(ct);
 
         var dogDtos = result.Dogs
-            .Select(d => new DogDto(d.Aid, d.Name, d.Age, d.Gender, d.PhotoUrl, d.Breed, d.Color, d.Size, d.Weight, d.AdoptionFee, d.CurrentLocation, d.ProfileUrl, d.FirstSeen, d.IntakeDate))
+            .Select(d => new DogDto(d.Aid, d.Shelter, d.Name, d.Age, d.Gender, d.PhotoUrl, d.Breed, d.Color, d.Size, d.Weight, d.AdoptionFee, d.CurrentLocation, d.ProfileUrl, d.FirstSeen, d.IntakeDate))
             .ToList();
 
         return new OkObjectResult(new StatusResponseDto(dogDtos, result.Count, result.LastChecked, result.IsMonitoringActive));

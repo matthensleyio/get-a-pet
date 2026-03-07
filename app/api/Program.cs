@@ -21,13 +21,15 @@ public sealed class Program
                 var connectionString = ctx.Configuration["AzureWebJobsStorage"]
                     ?? ctx.Configuration["STORAGE_CONNECTION_STRING"];
                 services.AddSingleton(_ => new TableServiceClient(connectionString));
-                services.AddHttpClient("PetBridge", c => c.Timeout = TimeSpan.FromSeconds(30));
+                services.AddHttpClient("PetBridge",  c => c.Timeout = TimeSpan.FromSeconds(30));
+                services.AddHttpClient("Petfinder",  c => c.Timeout = TimeSpan.FromSeconds(30));
 
                 services.AddScoped<StateRepository>();
                 services.AddScoped<DogRepository>();
                 services.AddScoped<SubscriptionRepository>();
 
                 services.AddScoped<ScrapingEngine>();
+                services.AddSingleton<PetfinderEngine>();
                 services.AddScoped<DogDiffEngine>();
                 services.AddScoped<NotificationEngine>();
 

@@ -14,6 +14,11 @@ public sealed class NotificationEngine(IConfiguration configuration)
     {
         var bodyParts = new List<string>();
 
+        if (dog.Shelter is not null)
+        {
+            bodyParts.Add(dog.Shelter);
+        }
+
         if (dog.Breed is not null)
         {
             bodyParts.Add($"Breed: {dog.Breed}");

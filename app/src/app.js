@@ -8,6 +8,7 @@ var DB_VERSION = 2;
 var STORE_NAME = "status";
 var POLL_INTERVAL = 30000;
 var SORT_KEY = "khs-sort";
+var FILTER_KEY = "khs-shelter-filter";
 
 var pollTimer = null;
 var MONITOR_INTERVAL = 60000;
@@ -62,8 +63,59 @@ document.addEventListener("visibilitychange", function () {
     startMonitorTrigger();
   }
 });
+
 var currentDogs = null;
 var currentSort = localStorage.getItem(SORT_KEY) || "newest";
+
+// Shelter filter state: Set of active shelter names (null = not yet initialised)
+var activeFilters = null;
+
+function loadFilters(dogs) {
+  var allShelters = Array.from(new Set((dogs || []).map(function (d) { return d.shelter; }).filter(Boolean))).sort();
+  var saved = localStorage.getItem(FILTER_KEY);
+  var savedSet = saved ? new Set(JSON.parse(saved)) : null;
+  // Default: all shelters active
+  activeFilters = savedSet && savedSet.size > 0 ? savedSet : new Set(allShelters);
+  return allShelters;
+}
+
+function saveFilters() {
+  localStorage.setItem(FILTER_KEY, JSON.stringify(Array.from(activeFilters)));
+}
+
+function renderFilterBar(allShelters) {
+  var bar = document.getElementById("filter-bar");
+  var container = document.getElementById("filter-options");
+  if (!allShelters || allShelters.length <= 1) {
+    bar.hidden = true;
+    return;
+  }
+  bar.hidden = false;
+  container.innerHTML = allShelters.map(function (shelter) {
+    var active = activeFilters.has(shelter);
+    return '<button class="filter-btn' + (active ? " active" : "") + '" data-shelter="' + shelter + '">' + shelter + '</button>';
+  }).join("");
+
+  container.querySelectorAll(".filter-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var shelter = btn.dataset.shelter;
+      if (activeFilters.has(shelter)) {
+        // Don't allow deselecting all
+        if (activeFilters.size > 1) {
+          activeFilters.delete(shelter);
+          btn.classList.remove("active");
+        }
+      } else {
+        activeFilters.add(shelter);
+        btn.classList.add("active");
+      }
+      saveFilters();
+      if (currentDogs) {
+        renderDogs(currentDogs);
+      }
+    });
+  });
+}
 
 function openDb() {
   return new Promise(function (resolve, reject) {
@@ -172,16 +224,20 @@ function renderDogs(dogs) {
   var grid = document.getElementById("dog-grid");
   var empty = document.getElementById("empty-state");
 
-  if (!dogs || dogs.length === 0) {
+  var filtered = (dogs || []).filter(function (d) {
+    return !d.shelter || !activeFilters || activeFilters.has(d.shelter);
+  });
+
+  if (!filtered || filtered.length === 0) {
     grid.innerHTML = "";
     empty.hidden = false;
     return;
   }
 
-  var dogs = sortDogs(dogs);
+  var sorted = sortDogs(filtered);
 
   empty.hidden = true;
-  grid.innerHTML = dogs
+  grid.innerHTML = sorted
     .map(function (dog, index) {
       var imgSrc = dog.photoUrl || "";
       var imgTag = imgSrc
@@ -192,20 +248,16 @@ function renderDogs(dogs) {
       var tags = [dog.size, dog.weight].filter(Boolean);
 
       return (
-        '<div class="dog-card" data-aid="' +
-        dog.aid +
+        '<div class="dog-card" data-aid="' + dog.aid + '" data-shelter="' + (dog.shelter || "") +
         '" style="--i: ' + Math.min(index, 15) + '">' +
         imgTag +
         (isNew ? '<span class="new-badge">New</span>' : '') +
         '<div class="dog-card-info">' +
-        "<h3>" +
-        (dog.name || "Unknown") +
-        "</h3>" +
-        "<p>" +
-        [dog.gender, dog.age].filter(Boolean).join(" &middot; ") +
-        "</p>" +
+        "<h3>" + (dog.name || "Unknown") + "</h3>" +
+        "<p>" + [dog.gender, dog.age].filter(Boolean).join(" &middot; ") + "</p>" +
         (breed ? '<p class="dog-card-breed">' + breed + "</p>" : "") +
         (tags.length ? '<div class="dog-card-tags">' + tags.map(function (t) { return '<span class="dog-card-tag">' + t + "</span>"; }).join("") + "</div>" : "") +
+        (dog.shelter ? '<p class="dog-card-shelter">' + dog.shelter + "</p>" : "") +
         "</div></div>"
       );
     })
@@ -214,8 +266,9 @@ function renderDogs(dogs) {
   grid.querySelectorAll(".dog-card").forEach(function (card) {
     card.addEventListener("click", function () {
       var aid = card.dataset.aid;
-      var dog = dogs.find(function (d) {
-        return d.aid === aid;
+      var shelter = card.dataset.shelter;
+      var dog = sorted.find(function (d) {
+        return d.aid === aid && (d.shelter || "") === shelter;
       });
       if (dog) {
         showModal(dog);
@@ -231,6 +284,9 @@ function showModal(dog) {
   document.getElementById("modal-name").textContent = dog.name || "Unknown";
 
   var details = [];
+  if (dog.shelter) {
+    details.push({ label: "Shelter", value: dog.shelter });
+  }
   if (dog.gender) {
     details.push({ label: "Gender", value: dog.gender });
   }
@@ -313,12 +369,16 @@ function fetchStatus() {
       if (data.offline) {
         return loadFromDb().then(function (cached) {
           if (cached) {
+            var allShelters = loadFilters(cached.dogs);
+            renderFilterBar(allShelters);
             renderDogs(cached.dogs);
             updateStatus(cached, true);
           }
         });
       }
 
+      var allShelters = loadFilters(data.dogs);
+      renderFilterBar(allShelters);
       renderDogs(data.dogs);
       updateStatus(data, false);
       return saveToDb(data);
@@ -326,6 +386,8 @@ function fetchStatus() {
     .catch(function () {
       return loadFromDb().then(function (cached) {
         if (cached) {
+          var allShelters = loadFilters(cached.dogs);
+          renderFilterBar(allShelters);
           renderDogs(cached.dogs);
           updateStatus(cached, true);
         }
@@ -525,6 +587,9 @@ if ("serviceWorker" in navigator) {
     }
   });
 }
+
+// Hide filter bar until we have data
+document.getElementById("filter-bar").hidden = true;
 
 initSortBar();
 initSubscribeButton();

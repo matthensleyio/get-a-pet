@@ -84,7 +84,7 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
                 ? DateTimeOffset.UtcNow.Date.AddDays(-Int32.Parse(daysOldMatch.Groups[1].Value))
                 : null;
 
-            dogs.Add(new Dog(aid, name, age, gender, photoUrl, null, null, null, null, null, null, profileUrl, default, intakeDate));
+            dogs.Add(new Dog(aid, "Kansas Humane Society", name, age, gender, photoUrl, null, null, null, null, null, null, profileUrl, default, intakeDate));
         }
 
         return dogs;

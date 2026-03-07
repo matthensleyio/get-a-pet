@@ -29,7 +29,7 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
 
             try
             {
-                var response = await _tableClient.GetEntityAsync<TableEntity>("dog", dog.Aid, cancellationToken: ct);
+                var response = await _tableClient.GetEntityAsync<TableEntity>(dog.Shelter, dog.Aid, cancellationToken: ct);
                 existing = response.Value;
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
@@ -38,7 +38,7 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
 
             if (existing is null)
             {
-                var entity = new TableEntity("dog", dog.Aid)
+                var entity = new TableEntity(dog.Shelter, dog.Aid)
                 {
                     ["Name"] = dog.Name,
                     ["Age"] = dog.Age,
@@ -78,30 +78,30 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
         }
     }
 
-    public async Task<IReadOnlyList<string>> GetAidsNeedingDetailsAsync(CancellationToken ct)
+    public async Task<IReadOnlyList<(string Shelter, string Aid)>> GetAidsNeedingDetailsAsync(CancellationToken ct)
     {
-        var aids = new List<string>();
+        var results = new List<(string, string)>();
 
         await foreach (var entity in _tableClient.QueryAsync<TableEntity>(
-            select: ["RowKey", "Breed"],
+            select: ["PartitionKey", "RowKey", "Breed"],
             cancellationToken: ct))
         {
             if (entity.GetString("Breed") is null)
             {
-                aids.Add(entity.RowKey);
+                results.Add((entity.PartitionKey, entity.RowKey));
             }
         }
 
-        return aids;
+        return results;
     }
 
-    public async Task RemoveDogsAsync(IReadOnlyList<string> aids, CancellationToken ct)
+    public async Task RemoveDogsAsync(IReadOnlyList<(string Shelter, string Aid)> dogs, CancellationToken ct)
     {
-        foreach (var aid in aids)
+        foreach (var (shelter, aid) in dogs)
         {
             try
             {
-                await _tableClient.DeleteEntityAsync("dog", aid, cancellationToken: ct);
+                await _tableClient.DeleteEntityAsync(shelter, aid, cancellationToken: ct);
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
@@ -113,6 +113,7 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
     {
         return new Dog(
             entity.RowKey,
+            entity.PartitionKey,
             entity.GetString("Name"),
             entity.GetString("Age"),
             entity.GetString("Gender"),
