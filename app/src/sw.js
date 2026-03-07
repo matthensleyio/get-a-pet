@@ -94,9 +94,9 @@ self.addEventListener("push", function (event) {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: data.icon || "/icon-192.svg",
+      icon: data.icon || "/icon-192.png",
       image: data.icon || undefined,
-      badge: "/badge-72.svg",
+      badge: "/badge-72.png",
       data: data.data || {},
     })
   );
