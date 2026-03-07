@@ -3,5 +3,4 @@ namespace Api.DomainModels;
 public sealed record SiteState(
     IReadOnlyList<string> KnownAids,
     IReadOnlyDictionary<string, string> KnownDogs,
-    DateTimeOffset Updated,
-    DateTimeOffset? LastPetfinderFetch);
+    DateTimeOffset Updated);

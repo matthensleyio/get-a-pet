@@ -22,14 +22,14 @@ public sealed class Program
                     ?? ctx.Configuration["STORAGE_CONNECTION_STRING"];
                 services.AddSingleton(_ => new TableServiceClient(connectionString));
                 services.AddHttpClient("PetBridge",  c => c.Timeout = TimeSpan.FromSeconds(30));
-                services.AddHttpClient("Petfinder",  c => c.Timeout = TimeSpan.FromSeconds(30));
+                services.AddHttpClient("ShelterLuv", c => c.Timeout = TimeSpan.FromSeconds(30));
 
                 services.AddScoped<StateRepository>();
                 services.AddScoped<DogRepository>();
                 services.AddScoped<SubscriptionRepository>();
 
                 services.AddScoped<ScrapingEngine>();
-                services.AddSingleton<PetfinderEngine>();
+                services.AddScoped<ShelterLuvEngine>();
                 services.AddScoped<DogDiffEngine>();
                 services.AddScoped<NotificationEngine>();
 

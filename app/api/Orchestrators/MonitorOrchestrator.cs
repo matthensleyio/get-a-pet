@@ -11,7 +11,7 @@ namespace Api.Orchestrators;
 
 public sealed class MonitorOrchestrator(
     ScrapingEngine scrapingEngine,
-    PetfinderEngine petfinderEngine,
+    ShelterLuvEngine shelterLuvEngine,
     DogDiffEngine dogDiffEngine,
     NotificationEngine notificationEngine,
     StateRepository stateRepository,
@@ -19,47 +19,39 @@ public sealed class MonitorOrchestrator(
     SubscriptionRepository subscriptionRepository,
     ILogger<MonitorOrchestrator> logger)
 {
-    // Only re-fetch Petfinder orgs at most this often to stay within API rate limits
-    private static readonly TimeSpan PetfinderCooldown = TimeSpan.FromMinutes(15);
-
-    private static readonly (string OrgId, string ShelterName)[] PetfinderOrgs =
-    [
-        ("MO179", "Humane Society of Missouri"),
-        ("MO208", "Humane Society of Missouri"),
-        ("MO579", "KC Pet Project"),
-        ("KS07",  "Great Plains SPCA"),
-    ];
-
     public async Task CheckAsync(CancellationToken ct)
     {
         var state = await stateRepository.GetStateAsync(ct);
 
-        var khsDogsTask = scrapingEngine.GetAllDogsAsync(ct);
-        var petfinderDogsTask = GetPetfinderDogsAsync(state, ct);
+        // Fetch all sources in parallel
+        var khsTask          = scrapingEngine.GetAllDogsAsync(ct);
+        var shelterLuvTask   = shelterLuvEngine.GetAllConfiguredSheltersAsync(ct);
 
-        await Task.WhenAll(khsDogsTask, petfinderDogsTask);
+        await Task.WhenAll(khsTask, shelterLuvTask);
 
-        var (petfinderDogs, petfinderFetchedAt) = await petfinderDogsTask;
-        var currentDogs = (await khsDogsTask).Concat(petfinderDogs).ToList();
+        var currentDogs = (await khsTask)
+            .Concat((await shelterLuvTask).SelectMany(r => r.Dogs))
+            .ToList();
 
         if (state is null)
         {
-            await HandleFirstRunAsync(currentDogs, petfinderFetchedAt, ct);
+            await HandleFirstRunAsync(currentDogs, ct);
             return;
         }
 
         var diff = dogDiffEngine.ComputeDiff(currentDogs, state);
 
+        // Only KHS dogs need a separate detail fetch
         var aidsNeedingDetails = await dogRepository.GetAidsNeedingDetailsAsync(ct);
         var aidsNeedingDetailsSet = aidsNeedingDetails
             .Where(x => x.Shelter == "Kansas Humane Society")
             .Select(x => x.Aid)
             .ToHashSet();
 
-        var newDogAids = diff.NewDogs.Select(d => d.Aid).ToHashSet();
+        var newDogAids = diff.NewDogs.Select(DogDiffEngine.ShelterKey).ToHashSet();
         var backfillDogs = currentDogs
             .Where(d => d.Shelter == "Kansas Humane Society"
-                     && !newDogAids.Contains(d.Aid)
+                     && !newDogAids.Contains(DogDiffEngine.ShelterKey(d))
                      && aidsNeedingDetailsSet.Contains(d.Aid))
             .ToList();
 
@@ -74,58 +66,15 @@ public sealed class MonitorOrchestrator(
         }
 
         await dogRepository.UpsertDogsAsync(dogsToStore, ct);
-        await SaveCurrentStateAsync(dogsToStore, petfinderFetchedAt ?? state.LastPetfinderFetch, ct);
+        await SaveCurrentStateAsync(dogsToStore, ct);
     }
 
-    private async Task<(IReadOnlyList<Dog> Dogs, DateTimeOffset? FetchedAt)> GetPetfinderDogsAsync(
-        SiteState? state,
-        CancellationToken ct)
-    {
-        var now = DateTimeOffset.UtcNow;
-
-        if (state?.LastPetfinderFetch is { } last && (now - last) < PetfinderCooldown)
-        {
-            logger.LogInformation("Petfinder cooldown active; reusing cached data");
-            // Return dogs from DB that came from Petfinder shelters
-            var allStored = await dogRepository.GetAllDogsAsync(ct);
-            var petfinderShelters = PetfinderOrgs.Select(o => o.ShelterName).ToHashSet();
-            return (allStored.Where(d => petfinderShelters.Contains(d.Shelter)).ToList(), null);
-        }
-
-        logger.LogInformation("Fetching from {Count} Petfinder org(s)", PetfinderOrgs.Length);
-
-        // Deduplicate by shelter name — MO179 and MO208 both map to "Humane Society of Missouri",
-        // so we query each org but merge by (ShelterName, Aid)
-        var tasks = PetfinderOrgs
-            .Select(o => petfinderEngine.GetAllDogsAsync(o.OrgId, o.ShelterName, ct))
-            .ToList();
-
-        var results = await Task.WhenAll(tasks);
-
-        var seen = new HashSet<string>();
-        var merged = new List<Dog>();
-
-        foreach (var dog in results.SelectMany(r => r))
-        {
-            var key = $"{dog.Shelter}:{dog.Aid}";
-            if (seen.Add(key))
-            {
-                merged.Add(dog);
-            }
-        }
-
-        return (merged, now);
-    }
-
-    private async Task HandleFirstRunAsync(
-        IReadOnlyList<Dog> dogs,
-        DateTimeOffset? petfinderFetchedAt,
-        CancellationToken ct)
+    private async Task HandleFirstRunAsync(IReadOnlyList<Dog> dogs, CancellationToken ct)
     {
         logger.LogInformation("First run, capturing initial state with {Count} dog(s)", dogs.Count);
 
         await dogRepository.UpsertDogsAsync(dogs, ct);
-        await SaveCurrentStateAsync(dogs, petfinderFetchedAt, ct);
+        await SaveCurrentStateAsync(dogs, ct);
     }
 
     private async Task<IReadOnlyList<Dog>> HandleNewDogsAsync(
@@ -144,13 +93,13 @@ public sealed class MonitorOrchestrator(
             logger.LogInformation("Backfilling details for {Count} KHS dog(s)", backfillDogs.Count);
         }
 
-        // Only KHS dogs need a separate detail fetch; Petfinder dogs have full data already
+        // Only KHS dogs need a separate detail fetch; ShelterLuv dogs have full data already
         var khsDogsToFetch = newDogs
             .Where(d => d.Shelter == "Kansas Humane Society")
             .Concat(backfillDogs)
             .ToList();
 
-        Dictionary<string, Dog> enrichedDogs = [];
+        var enrichedDogs = new Dictionary<string, Dog>();
 
         if (khsDogsToFetch.Count > 0)
         {
@@ -217,14 +166,11 @@ public sealed class MonitorOrchestrator(
         }
     }
 
-    private async Task SaveCurrentStateAsync(
-        IReadOnlyList<Dog> dogs,
-        DateTimeOffset? lastPetfinderFetch,
-        CancellationToken ct)
+    private async Task SaveCurrentStateAsync(IReadOnlyList<Dog> dogs, CancellationToken ct)
     {
-        var aids    = dogs.Select(DogDiffEngine.ShelterKey).ToList();
-        var dogMap  = dogs.ToDictionary(DogDiffEngine.ShelterKey, d => d.Name ?? "Unknown");
-        var state   = new SiteState(aids, dogMap, DateTimeOffset.UtcNow, lastPetfinderFetch);
+        var aids   = dogs.Select(DogDiffEngine.ShelterKey).ToList();
+        var dogMap = dogs.ToDictionary(DogDiffEngine.ShelterKey, d => d.Name ?? "Unknown");
+        var state  = new SiteState(aids, dogMap, DateTimeOffset.UtcNow);
 
         await stateRepository.SaveStateAsync(state, ct);
     }
