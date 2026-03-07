@@ -438,3 +438,6 @@ state.json
 
 # Azure Functions local settings (contains secrets)
 app/api/local.settings.json
+
+# Azurite local storage emulator data
+app/.azurite/

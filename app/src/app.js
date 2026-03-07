@@ -63,6 +63,7 @@ document.addEventListener("visibilitychange", function () {
   }
 });
 var currentDogs = null;
+var currentAdoptedDogs = null;
 var currentSort = localStorage.getItem(SORT_KEY) || "newest";
 
 function openDb() {
@@ -224,6 +225,66 @@ function renderDogs(dogs) {
   });
 }
 
+function renderAdoptedDogs(dogs) {
+  currentAdoptedDogs = dogs || null;
+
+  var grid = document.getElementById("adopted-grid");
+  var empty = document.getElementById("adopted-empty-state");
+  var badge = document.getElementById("adopted-count-badge");
+
+  if (!dogs || dogs.length === 0) {
+    grid.innerHTML = "";
+    empty.hidden = false;
+    badge.hidden = true;
+    return;
+  }
+
+  empty.hidden = true;
+  badge.textContent = dogs.length;
+  badge.hidden = false;
+
+  var sorted = dogs.slice().sort(function (a, b) {
+    return new Date(b.adoptedAt) - new Date(a.adoptedAt);
+  });
+
+  grid.innerHTML = sorted
+    .map(function (dog, index) {
+      var imgSrc = dog.photoUrl || "";
+      var imgTag = imgSrc
+        ? '<img src="' + imgSrc + '" alt="' + (dog.name || "Dog") + '" loading="lazy">'
+        : '<img src="" alt="No photo" style="background:var(--border)">';
+      var breed = dog.breed ? dog.breed.replace(/\s*\([^)]+\)/g, "").replace(/\s*\/\s*Mix\s*$/i, "").trim() : null;
+      var tags = [dog.size, dog.weight].filter(Boolean);
+
+      return (
+        '<div class="dog-card adopted-dog-card" data-aid="' +
+        dog.aid +
+        '" style="--i: ' + Math.min(index, 15) + '">' +
+        imgTag +
+        '<span class="adopted-badge">Adopted ' + timeAgo(dog.adoptedAt) + '</span>' +
+        '<div class="dog-card-info">' +
+        "<h3>" + (dog.name || "Unknown") + "</h3>" +
+        "<p>" + [dog.gender, dog.age].filter(Boolean).join(" &middot; ") + "</p>" +
+        (breed ? '<p class="dog-card-breed">' + breed + "</p>" : "") +
+        (tags.length ? '<div class="dog-card-tags">' + tags.map(function (t) { return '<span class="dog-card-tag">' + t + "</span>"; }).join("") + "</div>" : "") +
+        "</div></div>"
+      );
+    })
+    .join("");
+
+  grid.querySelectorAll(".adopted-dog-card").forEach(function (card) {
+    card.addEventListener("click", function () {
+      var aid = card.dataset.aid;
+      var dog = dogs.find(function (d) {
+        return d.aid === aid;
+      });
+      if (dog) {
+        showModal(dog);
+      }
+    });
+  });
+}
+
 function showModal(dog) {
   var overlay = document.getElementById("modal-overlay");
   document.getElementById("modal-img").src = dog.photoUrl || "";
@@ -248,6 +309,9 @@ function showModal(dog) {
   }
   if (dog.weight) {
     details.push({ label: "Weight", value: dog.weight });
+  }
+  if (dog.adoptedAt) {
+    details.push({ label: "Adopted", value: timeAgo(dog.adoptedAt) });
   }
   document.getElementById("modal-details").innerHTML = details
     .map(function (d) {
@@ -314,12 +378,14 @@ function fetchStatus() {
         return loadFromDb().then(function (cached) {
           if (cached) {
             renderDogs(cached.dogs);
+            renderAdoptedDogs(cached.recentlyAdopted || []);
             updateStatus(cached, true);
           }
         });
       }
 
       renderDogs(data.dogs);
+      renderAdoptedDogs(data.recentlyAdopted || []);
       updateStatus(data, false);
       return saveToDb(data);
     })
@@ -327,6 +393,7 @@ function fetchStatus() {
       return loadFromDb().then(function (cached) {
         if (cached) {
           renderDogs(cached.dogs);
+          renderAdoptedDogs(cached.recentlyAdopted || []);
           updateStatus(cached, true);
         }
       });
@@ -470,6 +537,22 @@ function unsubscribe(sub, btn) {
     });
 }
 
+function initTabs() {
+  var buttons = document.querySelectorAll(".tab-btn");
+  buttons.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      if (btn.classList.contains("active")) return;
+      buttons.forEach(function (b) {
+        b.classList.remove("active");
+      });
+      btn.classList.add("active");
+      var tab = btn.dataset.tab;
+      document.getElementById("tab-available").hidden = (tab !== "available");
+      document.getElementById("tab-adopted").hidden = (tab !== "removed");
+    });
+  });
+}
+
 function initSortBar() {
   var buttons = document.querySelectorAll(".sort-btn");
   buttons.forEach(function (btn) {
@@ -526,6 +609,7 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+initTabs();
 initSortBar();
 initSubscribeButton();
 startPolling();

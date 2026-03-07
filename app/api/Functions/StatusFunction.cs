@@ -20,6 +20,10 @@ public sealed class StatusFunction(StatusOrchestrator statusOrchestrator)
             .Select(d => new DogDto(d.Aid, d.Name, d.Age, d.Gender, d.PhotoUrl, d.Breed, d.Color, d.Size, d.Weight, d.AdoptionFee, d.CurrentLocation, d.ProfileUrl, d.FirstSeen, d.IntakeDate))
             .ToList();
 
-        return new OkObjectResult(new StatusResponseDto(dogDtos, result.Count, result.LastChecked, result.IsMonitoringActive));
+        var adoptedDogDtos = result.RecentlyAdopted
+            .Select(d => new AdoptedDogDto(d.Aid, d.Name, d.Age, d.Gender, d.PhotoUrl, d.Breed, d.Color, d.Size, d.Weight, d.AdoptionFee, d.CurrentLocation, d.ProfileUrl, d.FirstSeen, d.IntakeDate, d.AdoptedAt))
+            .ToList();
+
+        return new OkObjectResult(new StatusResponseDto(dogDtos, result.Count, result.LastChecked, result.IsMonitoringActive, adoptedDogDtos));
     }
 }

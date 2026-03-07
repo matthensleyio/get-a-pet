@@ -95,6 +95,25 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
         return aids;
     }
 
+    public async Task<IReadOnlyList<Dog>> GetByAidsAsync(IReadOnlyList<string> aids, CancellationToken ct)
+    {
+        var dogs = new List<Dog>();
+
+        foreach (var aid in aids)
+        {
+            try
+            {
+                var response = await _tableClient.GetEntityAsync<TableEntity>("dog", aid, cancellationToken: ct);
+                dogs.Add(MapToDog(response.Value));
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404)
+            {
+            }
+        }
+
+        return dogs;
+    }
+
     public async Task RemoveDogsAsync(IReadOnlyList<string> aids, CancellationToken ct)
     {
         foreach (var aid in aids)

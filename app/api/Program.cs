@@ -25,6 +25,7 @@ public sealed class Program
 
                 services.AddScoped<StateRepository>();
                 services.AddScoped<DogRepository>();
+                services.AddScoped<AdoptedDogRepository>();
                 services.AddScoped<SubscriptionRepository>();
 
                 services.AddScoped<ScrapingEngine>();
@@ -43,6 +44,7 @@ public sealed class Program
             await tables.CreateTableIfNotExistsAsync("Dogs");
             await tables.CreateTableIfNotExistsAsync("SiteState");
             await tables.CreateTableIfNotExistsAsync("PushSubscriptions");
+            await tables.CreateTableIfNotExistsAsync("AdoptedDogs");
         }
         catch (Exception ex)
         {

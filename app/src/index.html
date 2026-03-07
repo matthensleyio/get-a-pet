@@ -50,29 +50,54 @@
   </div>
 
   <main class="container">
-    <div class="sort-bar">
-      <span class="sort-label">Sort by</span>
-      <div class="sort-options">
-        <button class="sort-btn" data-sort="name">Name</button>
-        <button class="sort-btn" data-sort="age">Age</button>
-        <button class="sort-btn" data-sort="newest">Newest</button>
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="available">Available</button>
+      <button class="tab-btn" data-tab="adopted">Recently Adopted <span id="adopted-count-badge" class="count-badge adopted-count" hidden>0</span></button>
+    </div>
+
+    <div id="tab-available" class="tab-panel">
+      <div class="sort-bar">
+        <span class="sort-label">Sort by</span>
+        <div class="sort-options">
+          <button class="sort-btn" data-sort="name">Name</button>
+          <button class="sort-btn" data-sort="age">Age</button>
+          <button class="sort-btn" data-sort="newest">Newest</button>
+        </div>
+      </div>
+
+      <div id="dog-grid" class="dog-grid"></div>
+
+      <div id="empty-state" class="empty-state" hidden>
+        <div class="empty-paw" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="50" cy="70" rx="22" ry="18"/>
+            <ellipse cx="22" cy="44" rx="10" ry="12" transform="rotate(-15 22 44)"/>
+            <ellipse cx="39" cy="33" rx="10" ry="12" transform="rotate(-5 39 33)"/>
+            <ellipse cx="61" cy="33" rx="10" ry="12" transform="rotate(5 61 33)"/>
+            <ellipse cx="78" cy="44" rx="10" ry="12" transform="rotate(15 78 44)"/>
+          </svg>
+        </div>
+        <p class="empty-title">No pups available right now</p>
+        <p class="empty-sub">New dogs arrive often &mdash; check back soon!</p>
       </div>
     </div>
 
-    <div id="dog-grid" class="dog-grid"></div>
+    <div id="tab-adopted" class="tab-panel adopted-panel" hidden>
+      <div id="adopted-grid" class="dog-grid"></div>
 
-    <div id="empty-state" class="empty-state" hidden>
-      <div class="empty-paw" aria-hidden="true">
-        <svg viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-          <ellipse cx="50" cy="70" rx="22" ry="18"/>
-          <ellipse cx="22" cy="44" rx="10" ry="12" transform="rotate(-15 22 44)"/>
-          <ellipse cx="39" cy="33" rx="10" ry="12" transform="rotate(-5 39 33)"/>
-          <ellipse cx="61" cy="33" rx="10" ry="12" transform="rotate(5 61 33)"/>
-          <ellipse cx="78" cy="44" rx="10" ry="12" transform="rotate(15 78 44)"/>
-        </svg>
+      <div id="adopted-empty-state" class="empty-state" hidden>
+        <div class="empty-paw" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="50" cy="70" rx="22" ry="18"/>
+            <ellipse cx="22" cy="44" rx="10" ry="12" transform="rotate(-15 22 44)"/>
+            <ellipse cx="39" cy="33" rx="10" ry="12" transform="rotate(-5 39 33)"/>
+            <ellipse cx="61" cy="33" rx="10" ry="12" transform="rotate(5 61 33)"/>
+            <ellipse cx="78" cy="44" rx="10" ry="12" transform="rotate(15 78 44)"/>
+          </svg>
+        </div>
+        <p class="empty-title">No recent adoptions</p>
+        <p class="empty-sub">Dogs adopted from the shelter appear here for 24 hours.</p>
       </div>
-      <p class="empty-title">No pups available right now</p>
-      <p class="empty-sub">New dogs arrive often &mdash; check back soon!</p>
     </div>
   </main>
   </div>

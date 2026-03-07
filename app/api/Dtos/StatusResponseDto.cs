@@ -4,4 +4,5 @@ public sealed record StatusResponseDto(
     IReadOnlyList<DogDto> Dogs,
     int Count,
     DateTimeOffset? LastChecked,
-    bool IsMonitoringActive);
+    bool IsMonitoringActive,
+    IReadOnlyList<AdoptedDogDto> RecentlyAdopted);

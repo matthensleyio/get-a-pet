@@ -15,11 +15,14 @@ public sealed class MonitorOrchestrator(
     NotificationEngine notificationEngine,
     StateRepository stateRepository,
     DogRepository dogRepository,
+    AdoptedDogRepository adoptedDogRepository,
     SubscriptionRepository subscriptionRepository,
     ILogger<MonitorOrchestrator> logger)
 {
     public async Task CheckAsync(CancellationToken ct)
     {
+        await adoptedDogRepository.PruneOldAsync(ct);
+
         var state = await stateRepository.GetStateAsync(ct);
         var currentDogs = await scrapingEngine.GetAllDogsAsync(ct);
 
@@ -44,6 +47,8 @@ public sealed class MonitorOrchestrator(
         if (diff.RemovedAids.Count > 0)
         {
             logger.LogInformation("{Count} dog(s) removed", diff.RemovedAids.Count);
+            var adoptedDogs = await dogRepository.GetByAidsAsync(diff.RemovedAids, ct);
+            await adoptedDogRepository.SaveAsync(adoptedDogs, DateTimeOffset.UtcNow, ct);
             await dogRepository.RemoveDogsAsync(diff.RemovedAids, ct);
         }
 
