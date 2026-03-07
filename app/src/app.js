@@ -548,7 +548,7 @@ function initTabs() {
       btn.classList.add("active");
       var tab = btn.dataset.tab;
       document.getElementById("tab-available").hidden = (tab !== "available");
-      document.getElementById("tab-adopted").hidden = (tab !== "removed");
+      document.getElementById("tab-adopted").hidden = (tab !== "adopted");
     });
   });
 }
