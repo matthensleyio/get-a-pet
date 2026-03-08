@@ -97,7 +97,7 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
 
             var intakeDateStr = ExtractGroup(IntakeDateRegex, html)?.Trim();
             DateTimeOffset? intakeDate = intakeDateStr is not null
-                && DateTimeOffset.TryParseExact(intakeDateStr, "M/d/yyyy", null, System.Globalization.DateTimeStyles.None, out var parsed)
+                && DateTimeOffset.TryParse(intakeDateStr, out var parsed)
                 ? parsed
                 : null;
 
