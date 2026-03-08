@@ -60,6 +60,7 @@ document.addEventListener("visibilitychange", function () {
     stopMonitorTrigger();
   } else {
     startMonitorTrigger();
+    fetchStatus();
   }
 });
 var currentDogs = null;
@@ -152,12 +153,9 @@ function sortDogs(dogs) {
     });
   } else if (currentSort === "newest") {
     sorted.sort(function (a, b) {
-      var aIntake = a.intakeDate ? new Date(a.intakeDate).getTime() : 0;
-      var bIntake = b.intakeDate ? new Date(b.intakeDate).getTime() : 0;
-      if (aIntake !== bIntake) {
-        return bIntake - aIntake;
-      }
-      return new Date(b.firstSeen) - new Date(a.firstSeen);
+      var aIntake = a.intakeDate ? new Date(a.intakeDate).getTime() : new Date(a.firstSeen).getTime();
+      var bIntake = b.intakeDate ? new Date(b.intakeDate).getTime() : new Date(b.firstSeen).getTime();
+      return bIntake - aIntake;
     });
   } else {
     sorted.sort(function (a, b) {
