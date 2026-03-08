@@ -83,10 +83,10 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
         var aids = new List<string>();
 
         await foreach (var entity in _tableClient.QueryAsync<TableEntity>(
-            select: ["RowKey", "Breed"],
+            select: ["RowKey", "Breed", "IntakeDate"],
             cancellationToken: ct))
         {
-            if (entity.GetString("Breed") is null)
+            if (entity.GetString("Breed") is null || entity.GetDateTimeOffset("IntakeDate") is null)
             {
                 aids.Add(entity.RowKey);
             }

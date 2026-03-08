@@ -54,7 +54,7 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
         @"Location:</span>\s*([^<]+)", RegexOptions.Compiled);
 
     private static readonly Regex IntakeDateRegex = new(
-        @"Date Available:</span>\s*(\d+/\d+/\d+)", RegexOptions.Compiled);
+        @"At KHS Since:</span>\s*([A-Za-z]+ \d+, \d+)", RegexOptions.Compiled);
 
     public async Task<IReadOnlyList<Dog>> GetAllDogsAsync(CancellationToken ct)
     {
