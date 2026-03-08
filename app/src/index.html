@@ -11,7 +11,12 @@
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2D5C1A">
   <link rel="icon" href="icon-192.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icon-192.png">
+  <!-- iOS home screen icon — 180x180 solid PNG (no alpha), required for proper display -->
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <!-- iOS PWA standalone mode -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Get-A-Pet">
 </head>
 <body>
   <div id="content-wrapper">

@@ -1,29 +1,50 @@
 <svg viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
-  <!-- White background circle -->
-  <circle cx="96" cy="96" r="96" fill="white"/>
+  <!-- Solid background -->
+  <rect width="192" height="192" fill="#2D5C1A"/>
 
-  <!-- Blue circle border for PWA icon -->
-  <circle cx="96" cy="96" r="92" fill="none" stroke="#2563eb" stroke-width="4"/>
+  <!-- Left floppy ear -->
+  <ellipse cx="55" cy="98" rx="26" ry="41" fill="#7B4B24" transform="rotate(-18 55 98)"/>
+  <!-- Right floppy ear -->
+  <ellipse cx="137" cy="98" rx="26" ry="41" fill="#7B4B24" transform="rotate(18 137 98)"/>
 
-  <!-- Dog head silhouette -->
-  <!-- Left ear -->
-  <ellipse cx="60" cy="55" rx="18" ry="28" fill="#2563eb" transform="rotate(-30 60 55)"/>
+  <!-- Dog head -->
+  <ellipse cx="96" cy="109" rx="60" ry="56" fill="#C8874A"/>
 
-  <!-- Right ear -->
-  <ellipse cx="132" cy="55" rx="18" ry="28" fill="#2563eb" transform="rotate(30 132 55)"/>
+  <!-- Lighter forehead -->
+  <ellipse cx="96" cy="87" rx="42" ry="33" fill="#DDA870"/>
 
-  <!-- Head -->
-  <circle cx="96" cy="95" r="48" fill="#2563eb"/>
+  <!-- Muzzle -->
+  <ellipse cx="96" cy="130" rx="35" ry="30" fill="#DDA870"/>
 
-  <!-- Snout -->
-  <ellipse cx="96" cy="120" rx="32" ry="28" fill="#2563eb"/>
+  <!-- Left eye sclera -->
+  <ellipse cx="75" cy="99" rx="13" ry="14" fill="white"/>
+  <!-- Right eye sclera -->
+  <ellipse cx="117" cy="99" rx="13" ry="14" fill="white"/>
 
-  <!-- Left eye -->
-  <circle cx="80" cy="85" r="6" fill="white"/>
+  <!-- Left iris -->
+  <circle cx="75" cy="100" r="9" fill="#5C3010"/>
+  <!-- Right iris -->
+  <circle cx="117" cy="100" r="9" fill="#5C3010"/>
 
-  <!-- Right eye -->
-  <circle cx="112" cy="85" r="6" fill="white"/>
+  <!-- Left pupil -->
+  <circle cx="75" cy="100" r="5" fill="#1A0C06"/>
+  <!-- Right pupil -->
+  <circle cx="117" cy="100" r="5" fill="#1A0C06"/>
+
+  <!-- Left eye shine -->
+  <circle cx="78" cy="96" r="3" fill="white"/>
+  <!-- Right eye shine -->
+  <circle cx="120" cy="96" r="3" fill="white"/>
 
   <!-- Nose -->
-  <ellipse cx="96" cy="115" rx="8" ry="10" fill="white"/>
+  <ellipse cx="96" cy="119" rx="12" ry="9" fill="#1E100A"/>
+  <!-- Nose highlight -->
+  <ellipse cx="92" cy="116" rx="3.5" ry="2.5" fill="rgba(255,255,255,0.25)"/>
+
+  <!-- Mouth -->
+  <path d="M 85 129 Q 96 139 107 129" fill="none" stroke="#1E100A" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Tongue -->
+  <ellipse cx="96" cy="141" rx="9" ry="8" fill="#E8617A"/>
+  <path d="M 96 133 Q 96 139 96 147" fill="none" stroke="#C04060" stroke-width="1.5" stroke-linecap="round"/>
 </svg>

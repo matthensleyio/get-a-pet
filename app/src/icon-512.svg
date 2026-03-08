@@ -1,29 +1,65 @@
 <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <!-- White background circle -->
-  <circle cx="256" cy="256" r="256" fill="white"/>
+  <!-- Solid background — critical for iOS apple-touch-icon (no transparency) -->
+  <rect width="512" height="512" fill="#2D5C1A"/>
 
-  <!-- Blue circle border for PWA icon -->
-  <circle cx="256" cy="256" r="245" fill="none" stroke="#2563eb" stroke-width="10"/>
+  <!-- Left floppy ear (behind head) -->
+  <ellipse cx="146" cy="262" rx="68" ry="110" fill="#7B4B24" transform="rotate(-18 146 262)"/>
+  <!-- Right floppy ear (behind head) -->
+  <ellipse cx="366" cy="262" rx="68" ry="110" fill="#7B4B24" transform="rotate(18 366 262)"/>
 
-  <!-- Dog head silhouette -->
-  <!-- Left ear -->
-  <ellipse cx="160" cy="145" rx="48" ry="75" fill="#2563eb" transform="rotate(-30 160 145)"/>
+  <!-- Dog head -->
+  <ellipse cx="256" cy="290" rx="160" ry="150" fill="#C8874A"/>
 
-  <!-- Right ear -->
-  <ellipse cx="352" cy="145" rx="48" ry="75" fill="#2563eb" transform="rotate(30 352 145)"/>
+  <!-- Lighter top of head / forehead -->
+  <ellipse cx="256" cy="232" rx="112" ry="88" fill="#DDA870"/>
 
-  <!-- Head -->
-  <circle cx="256" cy="256" r="128" fill="#2563eb"/>
+  <!-- Muzzle -->
+  <ellipse cx="256" cy="348" rx="94" ry="80" fill="#DDA870"/>
 
-  <!-- Snout -->
-  <ellipse cx="256" cy="320" rx="85" ry="75" fill="#2563eb"/>
+  <!-- Left eye — white sclera -->
+  <ellipse cx="200" cy="264" rx="34" ry="36" fill="white"/>
+  <!-- Right eye — white sclera -->
+  <ellipse cx="312" cy="264" rx="34" ry="36" fill="white"/>
 
-  <!-- Left eye -->
-  <circle cx="213" cy="230" r="16" fill="white"/>
+  <!-- Left iris (warm brown) -->
+  <circle cx="200" cy="266" r="23" fill="#5C3010"/>
+  <!-- Right iris -->
+  <circle cx="312" cy="266" r="23" fill="#5C3010"/>
 
-  <!-- Right eye -->
-  <circle cx="299" cy="230" r="16" fill="white"/>
+  <!-- Left pupil -->
+  <circle cx="200" cy="267" r="14" fill="#1A0C06"/>
+  <!-- Right pupil -->
+  <circle cx="312" cy="267" r="14" fill="#1A0C06"/>
+
+  <!-- Left eye shine (main) -->
+  <circle cx="208" cy="257" r="8" fill="white"/>
+  <!-- Left eye shine (small) -->
+  <circle cx="194" cy="271" r="3.5" fill="rgba(255,255,255,0.55)"/>
+
+  <!-- Right eye shine (main) -->
+  <circle cx="320" cy="257" r="8" fill="white"/>
+  <!-- Right eye shine (small) -->
+  <circle cx="306" cy="271" r="3.5" fill="rgba(255,255,255,0.55)"/>
 
   <!-- Nose -->
-  <ellipse cx="256" cy="310" rx="22" ry="28" fill="white"/>
+  <ellipse cx="256" cy="318" rx="32" ry="24" fill="#1E100A"/>
+  <!-- Nose highlight -->
+  <ellipse cx="246" cy="311" rx="9" ry="6" fill="rgba(255,255,255,0.25)"/>
+
+  <!-- Mouth -->
+  <path d="M 228 344 Q 256 370 284 344" fill="none" stroke="#1E100A" stroke-width="5.5" stroke-linecap="round"/>
+
+  <!-- Tongue -->
+  <ellipse cx="256" cy="374" rx="24" ry="22" fill="#E8617A"/>
+  <!-- Tongue center crease -->
+  <path d="M 256 355 Q 256 370 256 394" fill="none" stroke="#C04060" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Small paw print in top-right corner — subtle branding -->
+  <g fill="rgba(255,255,255,0.18)" transform="translate(390, 64) scale(0.55)">
+    <ellipse cx="50" cy="70" rx="22" ry="18"/>
+    <ellipse cx="22" cy="44" rx="10" ry="12" transform="rotate(-15 22 44)"/>
+    <ellipse cx="39" cy="33" rx="10" ry="12" transform="rotate(-5 39 33)"/>
+    <ellipse cx="61" cy="33" rx="10" ry="12" transform="rotate(5 61 33)"/>
+    <ellipse cx="78" cy="44" rx="10" ry="12" transform="rotate(15 78 44)"/>
+  </g>
 </svg>
