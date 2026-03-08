@@ -96,7 +96,8 @@ public sealed class MonitorOrchestrator(
                 Size = detail.Size,
                 Weight = detail.Weight,
                 AdoptionFee = detail.AdoptionFee,
-                CurrentLocation = detail.CurrentLocation
+                CurrentLocation = detail.CurrentLocation,
+                IntakeDate = detail.IntakeDate ?? dog.IntakeDate
             } : dog)
             .ToDictionary(d => d.Aid);
 

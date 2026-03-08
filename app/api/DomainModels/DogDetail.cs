@@ -6,4 +6,5 @@ public sealed record DogDetail(
     string? Size,
     string? Weight,
     string? AdoptionFee,
-    string? CurrentLocation);
+    string? CurrentLocation,
+    DateTimeOffset? IntakeDate);

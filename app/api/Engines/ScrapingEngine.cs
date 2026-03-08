@@ -53,8 +53,8 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
     private static readonly Regex LocationRegex = new(
         @"Location:</span>\s*([^<]+)", RegexOptions.Compiled);
 
-    private static readonly Regex DaysOldRegex = new(
-        @"days_old_(\d+)", RegexOptions.Compiled);
+    private static readonly Regex IntakeDateRegex = new(
+        @"Date Available:</span>\s*(\d+/\d+/\d+)", RegexOptions.Compiled);
 
     public async Task<IReadOnlyList<Dog>> GetAllDogsAsync(CancellationToken ct)
     {
@@ -79,12 +79,8 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
             var gender = ExtractGroup(GenderRegex, cardHtml);
             var photoUrl = ExtractPhotoUrl(cardHtml);
             var profileUrl = String.Format(ProfileUrlTemplate, aid);
-            var daysOldMatch = DaysOldRegex.Match(cardHtml);
-            DateTimeOffset? intakeDate = daysOldMatch.Success
-                ? DateTimeOffset.UtcNow.Date.AddDays(-Int32.Parse(daysOldMatch.Groups[1].Value))
-                : null;
 
-            dogs.Add(new Dog(aid, name, age, gender, photoUrl, null, null, null, null, null, null, profileUrl, default, intakeDate));
+            dogs.Add(new Dog(aid, name, age, gender, photoUrl, null, null, null, null, null, null, profileUrl, default, null));
         }
 
         return dogs;
@@ -99,13 +95,20 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
         {
             var html = await client.GetStringAsync(url, ct);
 
+            var intakeDateStr = ExtractGroup(IntakeDateRegex, html)?.Trim();
+            DateTimeOffset? intakeDate = intakeDateStr is not null
+                && DateTimeOffset.TryParseExact(intakeDateStr, "M/d/yyyy", null, System.Globalization.DateTimeStyles.None, out var parsed)
+                ? parsed
+                : null;
+
             return new DogDetail(
                 ExtractGroup(BreedRegex, html)?.Trim(),
                 ExtractGroup(ColorRegex, html)?.Trim(),
                 ExtractGroup(SizeRegex, html)?.Trim(),
                 ExtractGroup(WeightRegex, html)?.Trim(),
                 ExtractGroup(AdoptionFeeRegex, html)?.Trim(),
-                ExtractGroup(LocationRegex, html)?.Trim());
+                ExtractGroup(LocationRegex, html)?.Trim(),
+                intakeDate);
         }
         catch (HttpRequestException)
         {
