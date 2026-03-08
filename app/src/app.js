@@ -310,6 +310,9 @@ function showModal(dog) {
   if (dog.weight) {
     details.push({ label: "Weight", value: dog.weight });
   }
+  if (dog.intakeDate) {
+    details.push({ label: "At shelter since", value: new Date(dog.intakeDate).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) });
+  }
   if (dog.adoptedAt) {
     details.push({ label: "Adopted", value: timeAgo(dog.adoptedAt) });
   }
