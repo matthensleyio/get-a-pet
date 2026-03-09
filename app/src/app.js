@@ -501,8 +501,8 @@ function urlBase64ToUint8Array(base64String) {
   return arr;
 }
 
-function showIosBanner() {
-  if (localStorage.getItem("ios-banner-dismissed")) return;
+function showIosBanner(force) {
+  if (!force && localStorage.getItem("ios-banner-dismissed")) return;
   var banner = document.getElementById("ios-install-banner");
   banner.hidden = false;
   requestAnimationFrame(function () {
@@ -551,6 +551,10 @@ function initSubscribeButton() {
     var isStandalone = window.navigator.standalone === true;
     if (isIos && !isStandalone) {
       showIosBanner();
+      btn.hidden = false;
+      btn.addEventListener("click", function () {
+        showIosBanner(true);
+      });
     }
     return;
   }
