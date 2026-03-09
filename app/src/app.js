@@ -153,9 +153,13 @@ function sortDogs(dogs) {
     });
   } else if (currentSort === "newest") {
     sorted.sort(function (a, b) {
-      var aIntake = a.intakeDate ? new Date(a.intakeDate).getTime() : new Date(a.firstSeen).getTime();
-      var bIntake = b.intakeDate ? new Date(b.intakeDate).getTime() : new Date(b.firstSeen).getTime();
-      return bIntake - aIntake;
+      var now = Date.now();
+      var DAY = 86400000;
+      var aListing = a.listingDate ? new Date(a.listingDate).getTime() : 0;
+      var bListing = b.listingDate ? new Date(b.listingDate).getTime() : 0;
+      var aDate = (aListing && now - aListing < DAY) ? aListing : (a.intakeDate ? new Date(a.intakeDate).getTime() : new Date(a.firstSeen).getTime());
+      var bDate = (bListing && now - bListing < DAY) ? bListing : (b.intakeDate ? new Date(b.intakeDate).getTime() : new Date(b.firstSeen).getTime());
+      return bDate - aDate;
     });
   } else {
     sorted.sort(function (a, b) {
@@ -186,7 +190,7 @@ function renderDogs(dogs) {
       var imgTag = imgSrc
         ? '<img src="' + imgSrc + '" alt="' + (dog.name || "Dog") + '" loading="lazy">'
         : '<img src="" alt="No photo" style="background:var(--border)">';
-      var isNew = dog.intakeDate && (Date.now() - new Date(dog.intakeDate).getTime()) < 86400000;
+      var isNew = dog.listingDate && (Date.now() - new Date(dog.listingDate).getTime()) < 172800000;
       var breed = dog.breed ? dog.breed.replace(/\s*\([^)]+\)/g, "").replace(/\s*\/\s*Mix\s*$/i, "").trim() : null;
       var tags = [dog.size, dog.weight].filter(Boolean);
 

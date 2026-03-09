@@ -35,14 +35,11 @@ public sealed class MonitorOrchestrator(
         var diff = dogDiffEngine.ComputeDiff(currentDogs, state);
 
         var newDogAids = diff.NewDogs.Select(d => d.Aid).ToHashSet();
-        var aidsNeedingDetails = await dogRepository.GetAidsNeedingDetailsAsync(ct);
-        var backfillDogs = currentDogs
-            .Where(d => !newDogAids.Contains(d.Aid) && aidsNeedingDetails.Contains(d.Aid))
+        var existingDogs = currentDogs
+            .Where(d => !newDogAids.Contains(d.Aid))
             .ToList();
 
-        var dogsToStore = (diff.NewDogs.Count > 0 || backfillDogs.Count > 0)
-            ? await HandleNewDogsAsync(currentDogs, diff.NewDogs, backfillDogs, ct)
-            : currentDogs;
+        var dogsToStore = await HandleNewDogsAsync(currentDogs, diff.NewDogs, existingDogs, ct);
 
         if (diff.RemovedAids.Count > 0)
         {
@@ -73,11 +70,6 @@ public sealed class MonitorOrchestrator(
         if (newDogs.Count > 0)
         {
             logger.LogInformation("Found {Count} new dog(s)", newDogs.Count);
-        }
-
-        if (backfillDogs.Count > 0)
-        {
-            logger.LogInformation("Backfilling details for {Count} dog(s)", backfillDogs.Count);
         }
 
         var dogsToFetch = newDogs.Concat(backfillDogs).ToList();

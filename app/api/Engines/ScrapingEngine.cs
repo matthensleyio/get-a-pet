@@ -53,6 +53,9 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
     private static readonly Regex LocationRegex = new(
         @"Location:</span>\s*([^<]+)", RegexOptions.Compiled);
 
+    private static readonly Regex DaysOldRegex = new(
+        @"days_old_(\d+)", RegexOptions.Compiled);
+
     private static readonly Regex IntakeDateRegex = new(
         @"At KHS Since:</span>\s*([A-Za-z]+ \d+, \d+)", RegexOptions.Compiled);
 
@@ -62,6 +65,7 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
         var html = await client.GetStringAsync(ListUrl, ct);
         var cards = CardRegex.Matches(html);
         var dogs = new List<Dog>();
+        var today = new DateTimeOffset(DateTimeOffset.UtcNow.Date, TimeSpan.Zero);
 
         foreach (Match card in cards)
         {
@@ -79,8 +83,12 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
             var gender = ExtractGroup(GenderRegex, cardHtml);
             var photoUrl = ExtractPhotoUrl(cardHtml);
             var profileUrl = String.Format(ProfileUrlTemplate, aid);
+            var daysOldMatch = DaysOldRegex.Match(cardHtml);
+            DateTimeOffset? listingDate = daysOldMatch.Success
+                ? today.AddDays(-int.Parse(daysOldMatch.Groups[1].Value))
+                : null;
 
-            dogs.Add(new Dog(aid, name, age, gender, photoUrl, null, null, null, null, null, null, profileUrl, default, null));
+            dogs.Add(new Dog(aid, name, age, gender, photoUrl, null, null, null, null, null, null, profileUrl, default, null, listingDate));
         }
 
         return dogs;

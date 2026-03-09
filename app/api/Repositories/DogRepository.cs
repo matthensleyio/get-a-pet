@@ -36,63 +36,35 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
             {
             }
 
-            if (existing is null)
+            if (existing is not null)
             {
-                var entity = new TableEntity("dog", dog.Aid)
-                {
-                    ["Name"] = dog.Name,
-                    ["Age"] = dog.Age,
-                    ["Gender"] = dog.Gender,
-                    ["PhotoUrl"] = dog.PhotoUrl,
-                    ["Breed"] = dog.Breed,
-                    ["Color"] = dog.Color,
-                    ["Size"] = dog.Size,
-                    ["Weight"] = dog.Weight,
-                    ["AdoptionFee"] = dog.AdoptionFee,
-                    ["CurrentLocation"] = dog.CurrentLocation,
-                    ["ProfileUrl"] = dog.ProfileUrl,
-                    ["FirstSeen"] = DateTimeOffset.UtcNow,
-                    ["IntakeDate"] = dog.IntakeDate
-                };
-
-                await _tableClient.AddEntityAsync(entity, ct);
+                await _tableClient.DeleteEntityAsync("dog", dog.Aid, existing.ETag, ct);
             }
-            else
-            {
-                existing["Name"] = dog.Name;
-                existing["Age"] = dog.Age;
-                existing["Gender"] = dog.Gender;
-                existing["PhotoUrl"] = dog.PhotoUrl;
-                existing["ProfileUrl"] = dog.ProfileUrl;
-                existing["IntakeDate"] = dog.IntakeDate;
 
-                if (dog.Breed is not null) existing["Breed"] = dog.Breed;
-                if (dog.Color is not null) existing["Color"] = dog.Color;
-                if (dog.Size is not null) existing["Size"] = dog.Size;
-                if (dog.Weight is not null) existing["Weight"] = dog.Weight;
-                if (dog.AdoptionFee is not null) existing["AdoptionFee"] = dog.AdoptionFee;
-                if (dog.CurrentLocation is not null) existing["CurrentLocation"] = dog.CurrentLocation;
-
-                await _tableClient.UpdateEntityAsync(existing, existing.ETag, TableUpdateMode.Merge, ct);
-            }
+            var firstSeen = existing?.GetDateTimeOffset("FirstSeen") ?? DateTimeOffset.UtcNow;
+            await _tableClient.AddEntityAsync(BuildEntity(dog, firstSeen), ct);
         }
     }
 
-    public async Task<IReadOnlyList<string>> GetAidsNeedingDetailsAsync(CancellationToken ct)
+    private static TableEntity BuildEntity(Dog dog, DateTimeOffset firstSeen)
     {
-        var aids = new List<string>();
-
-        await foreach (var entity in _tableClient.QueryAsync<TableEntity>(
-            select: ["RowKey", "Breed", "IntakeDate"],
-            cancellationToken: ct))
+        return new TableEntity("dog", dog.Aid)
         {
-            if (entity.GetString("Breed") is null || entity.GetDateTimeOffset("IntakeDate") is null)
-            {
-                aids.Add(entity.RowKey);
-            }
-        }
-
-        return aids;
+            ["Name"] = dog.Name,
+            ["Age"] = dog.Age,
+            ["Gender"] = dog.Gender,
+            ["PhotoUrl"] = dog.PhotoUrl,
+            ["Breed"] = dog.Breed,
+            ["Color"] = dog.Color,
+            ["Size"] = dog.Size,
+            ["Weight"] = dog.Weight,
+            ["AdoptionFee"] = dog.AdoptionFee,
+            ["CurrentLocation"] = dog.CurrentLocation,
+            ["ProfileUrl"] = dog.ProfileUrl,
+            ["FirstSeen"] = firstSeen,
+            ["IntakeDate"] = dog.IntakeDate,
+            ["ListingDate"] = dog.ListingDate
+        };
     }
 
     public async Task<IReadOnlyList<Dog>> GetByAidsAsync(IReadOnlyList<string> aids, CancellationToken ct)
@@ -144,6 +116,7 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
             entity.GetString("CurrentLocation"),
             entity.GetString("ProfileUrl"),
             entity.GetDateTimeOffset("FirstSeen") ?? DateTimeOffset.UtcNow,
-            entity.GetDateTimeOffset("IntakeDate"));
+            entity.GetDateTimeOffset("IntakeDate"),
+            entity.GetDateTimeOffset("ListingDate"));
     }
 }

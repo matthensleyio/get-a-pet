@@ -14,4 +14,5 @@ public sealed record DogDto(
     string? CurrentLocation,
     string? ProfileUrl,
     DateTimeOffset FirstSeen,
-    DateTimeOffset? IntakeDate);
+    DateTimeOffset? IntakeDate,
+    DateTimeOffset? ListingDate);
