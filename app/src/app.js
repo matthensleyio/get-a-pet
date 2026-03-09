@@ -15,7 +15,7 @@ var SHELTER_IDS = ["khs", "kcpp", "gpspca"];
 var SHELTER_NAMES = { khs: "KHS", kcpp: "KC Pet Project", gpspca: "Great Plains SPCA" };
 
 var pollTimer = null;
-var MONITOR_INTERVAL = 60000;
+var MONITOR_INTERVAL = 300000;
 var monitorTimer = null;
 
 function triggerMonitor(force) {
