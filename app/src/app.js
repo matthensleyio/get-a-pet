@@ -335,6 +335,7 @@ function showModal(dog) {
   var link = document.getElementById("modal-link");
   if (dog.profileUrl) {
     link.href = dog.profileUrl;
+    link.textContent = "View on " + (SHELTER_NAMES[dog.shelterId] || "Shelter") + " Website";
     link.hidden = false;
   } else {
     link.hidden = true;

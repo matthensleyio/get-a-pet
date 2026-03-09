@@ -26,20 +26,12 @@
         <p class="header-tagline">Local shelter dogs, updated every minute</p>
       </div>
       <div class="header-controls">
-        <div class="header-meta">
-          <div class="status-pill">
-            <span id="status-indicator" class="status-indicator"></span>
-            <span id="status-text">Loading&hellip;</span>
-          </div>
-          <span id="last-checked" class="last-checked"></span>
-        </div>
         <div class="notif-group">
-          <button id="subscribe-btn" class="subscribe-btn" hidden>
+          <button id="subscribe-btn" class="subscribe-btn" hidden aria-label="Alert settings">
             <svg class="bell-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
-            <span class="subscribe-label">Get Alerts</span>
           </button>
           <div id="notif-panel" class="notif-panel" hidden>
             <div id="notif-panel-main">
@@ -159,6 +151,16 @@
       </div>
     </div>
   </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="status-pill">
+        <span id="status-indicator" class="status-indicator"></span>
+        <span id="status-text">Loading&hellip;</span>
+      </div>
+      <span id="last-checked" class="last-checked"></span>
+    </div>
+  </footer>
   </div>
 
   <div id="modal-overlay" class="modal-overlay">
