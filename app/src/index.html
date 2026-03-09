@@ -6,14 +6,12 @@
   <title>get-a-pet</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#2D5C1A">
+  <meta name="theme-color" content="#D45B20">
   <link rel="icon" href="icon-192.svg" type="image/svg+xml">
-  <!-- iOS home screen icon — 180x180 solid PNG (no alpha), required for proper display -->
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <!-- iOS PWA standalone mode -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Get-A-Pet">
@@ -24,26 +22,51 @@
   <header class="site-header">
     <div class="header-inner">
       <div class="header-brand">
-        <h1 class="site-title">Get-A-Pet<span id="count-badge" class="count-badge" hidden>0</span></h1>
-        <p class="header-tagline">Get notified when the perfect pet is available for adoption!</p>
+        <h1 class="site-title">Get-A-Pet</h1>
+        <p class="header-tagline">Local shelter dogs, updated every minute</p>
       </div>
       <div class="header-controls">
-        <div class="status-pill">
-          <span id="status-indicator" class="status-indicator"></span>
-          <span id="status-text">Loading&hellip;</span>
+        <div class="header-meta">
+          <div class="status-pill">
+            <span id="status-indicator" class="status-indicator"></span>
+            <span id="status-text">Loading&hellip;</span>
+          </div>
+          <span id="last-checked" class="last-checked"></span>
         </div>
-        <span id="last-checked" class="last-checked"></span>
-        <button id="subscribe-btn" class="subscribe-btn" hidden>Get Alerts</button>
-        <div id="notif-shelter-filter" class="notif-shelter-filter" hidden>
-          <span class="notif-label">Notify me about:</span>
-          <button class="sort-btn active" data-notif-shelter="khs">KHS</button>
-          <button class="sort-btn active" data-notif-shelter="kcpp">KC Pet Project</button>
-          <button class="sort-btn active" data-notif-shelter="gpspca">Great Plains SPCA</button>
+        <div class="notif-group">
+          <button id="subscribe-btn" class="subscribe-btn" hidden>
+            <svg class="bell-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span class="subscribe-label">Get Alerts</span>
+          </button>
+          <div id="notif-panel" class="notif-panel" hidden>
+            <div id="notif-panel-main">
+              <div id="notif-shelter-filter" class="notif-shelter-filter">
+                <span class="notif-section-title">Notify me about</span>
+                <div class="notif-shelter-options">
+                  <button class="notif-shelter-btn active" data-notif-shelter="khs">KHS</button>
+                  <button class="notif-shelter-btn active" data-notif-shelter="kcpp">KC Pet Project</button>
+                  <button class="notif-shelter-btn active" data-notif-shelter="gpspca">Great Plains SPCA</button>
+                </div>
+              </div>
+              <button id="unsubscribe-btn" class="unsubscribe-btn">Turn Off Alerts</button>
+            </div>
+            <div id="notif-panel-confirm" class="notif-panel-confirm" hidden>
+              <p class="notif-confirm-text">Stop getting alerts?</p>
+              <div class="notif-confirm-actions">
+                <button id="unsubscribe-confirm-btn" class="unsubscribe-confirm-btn">Yes, turn off</button>
+                <button id="unsubscribe-cancel-btn" class="unsubscribe-cancel-btn">Keep alerts</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </header>
 
+  <div class="header-stripe"></div>
   <div id="offline-banner" class="offline-banner">
     <div class="offline-banner-inner">
       <svg class="offline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
@@ -62,35 +85,45 @@
 
   <main class="container">
     <div class="tab-bar">
-      <button class="tab-btn active" data-tab="available">Available</button>
+      <button class="tab-btn active" data-tab="available">Available <span id="count-badge" class="count-badge" hidden>0</span></button>
       <button class="tab-btn" data-tab="adopted">Recently Adopted <span id="adopted-count-badge" class="count-badge adopted-count" hidden>0</span></button>
     </div>
 
     <div id="tab-available" class="tab-panel">
-      <div class="sort-bar">
-        <span class="sort-label">Sort by</span>
-        <div class="sort-options">
-          <button class="sort-btn" data-sort="name">Name</button>
-          <button class="sort-btn" data-sort="age">Age</button>
-          <button class="sort-btn" data-sort="newest">Newest</button>
+      <div class="filter-bar">
+        <div class="filter-group">
+          <span class="filter-label">Sort</span>
+          <div class="filter-options">
+            <button class="filter-btn" data-sort="name">Name</button>
+            <button class="filter-btn" data-sort="age">Age</button>
+            <button class="filter-btn" data-sort="newest">Newest</button>
+          </div>
         </div>
-      </div>
-
-      <div class="shelter-filter-bar">
-        <span class="sort-label">Shelter</span>
-        <div class="sort-options">
-          <button class="sort-btn active" data-shelter="khs">KHS</button>
-          <button class="sort-btn active" data-shelter="kcpp">KC Pet Project</button>
-          <button class="sort-btn active" data-shelter="gpspca">Great Plains SPCA</button>
+        <div class="filter-group">
+          <span class="filter-label">Shelter</span>
+          <div class="filter-options">
+            <button class="filter-btn active" data-shelter="khs">KHS</button>
+            <button class="filter-btn active" data-shelter="kcpp">KC Pet Project</button>
+            <button class="filter-btn active" data-shelter="gpspca">Great Plains SPCA</button>
+          </div>
         </div>
       </div>
 
       <div id="dog-grid" class="dog-grid"></div>
 
       <div id="pagination" class="pagination" hidden>
-        <button id="prev-btn" class="page-btn">&larr; Prev</button>
+        <button id="prev-btn" class="page-arrow" aria-label="Previous page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <div id="page-numbers" class="page-numbers"></div>
         <span id="page-info" class="page-info"></span>
-        <button id="next-btn" class="page-btn">Next &rarr;</button>
+        <button id="next-btn" class="page-arrow" aria-label="Next page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 6 15 12 9 18"/>
+          </svg>
+        </button>
       </div>
 
       <div id="empty-state" class="empty-state" hidden>
@@ -165,6 +198,42 @@
         </svg>
       </span>
       Share button, then <strong>"Add to Home Screen"</strong>
+    </div>
+  </div>
+
+  <div id="notif-setup-overlay" class="notif-setup-overlay">
+    <div class="notif-setup-modal" role="dialog" aria-modal="true" aria-labelledby="notif-setup-title">
+      <div class="notif-setup-header">
+        <div class="notif-setup-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+        </div>
+        <h2 id="notif-setup-title">Get Alerts</h2>
+        <p>Choose which shelters to follow</p>
+      </div>
+      <div class="notif-setup-shelters">
+        <label class="notif-setup-row">
+          <input type="checkbox" class="notif-setup-check" value="khs">
+          <span class="notif-setup-box"></span>
+          <span>KHS</span>
+        </label>
+        <label class="notif-setup-row">
+          <input type="checkbox" class="notif-setup-check" value="kcpp">
+          <span class="notif-setup-box"></span>
+          <span>KC Pet Project</span>
+        </label>
+        <label class="notif-setup-row">
+          <input type="checkbox" class="notif-setup-check" value="gpspca">
+          <span class="notif-setup-box"></span>
+          <span>Great Plains SPCA</span>
+        </label>
+      </div>
+      <div class="notif-setup-actions">
+        <button id="notif-setup-confirm" class="notif-setup-confirm-btn">Turn On Alerts</button>
+        <button id="notif-setup-cancel" class="notif-setup-cancel-btn">Cancel</button>
+      </div>
     </div>
   </div>
 

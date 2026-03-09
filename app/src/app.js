@@ -100,6 +100,7 @@ function loadActiveNotifShelters() {
 
 var activeNotifShelters = loadActiveNotifShelters();
 var currentSubData = null;
+var pendingSubReg = null;
 
 function openDb() {
   return new Promise(function (resolve, reject) {
@@ -185,7 +186,7 @@ function renderDogs(dogs) {
       var imgSrc = dog.photoUrl || "";
       var imgTag = imgSrc
         ? '<img src="' + imgSrc + '" alt="' + (dog.name || "Dog") + '" loading="lazy">'
-        : '<img src="" alt="No photo" style="background:var(--border)">';
+        : '<img src="" alt="No photo" style="background:var(--surface)">';
       var isNew = dog.firstSeen && (Date.now() - new Date(dog.firstSeen).getTime()) < 86400000;
       var breed = dog.breed ? dog.breed.replace(/\s*\([^)]+\)/g, "").replace(/\s*\/\s*Mix\s*$/i, "").trim() : null;
       var shelterName = SHELTER_NAMES[dog.shelterId] || dog.shelterId || null;
@@ -251,7 +252,7 @@ function renderAdoptedDogs(dogs) {
       var imgSrc = dog.photoUrl || "";
       var imgTag = imgSrc
         ? '<img src="' + imgSrc + '" alt="' + (dog.name || "Dog") + '" loading="lazy">'
-        : '<img src="" alt="No photo" style="background:var(--border)">';
+        : '<img src="" alt="No photo" style="background:var(--surface)">';
       var breed = dog.breed ? dog.breed.replace(/\s*\([^)]+\)/g, "").replace(/\s*\/\s*Mix\s*$/i, "").trim() : null;
       var tags = [dog.size, dog.weight].filter(Boolean);
 
@@ -351,6 +352,7 @@ function renderPagination(page, pageSize, totalCount) {
   var prevBtn = document.getElementById("prev-btn");
   var nextBtn = document.getElementById("next-btn");
   var pageInfo = document.getElementById("page-info");
+  var pageNums = document.getElementById("page-numbers");
   var totalPages = Math.ceil(totalCount / pageSize);
 
   if (totalPages <= 1) {
@@ -362,6 +364,36 @@ function renderPagination(page, pageSize, totalCount) {
   prevBtn.disabled = page <= 1;
   nextBtn.disabled = page >= totalPages;
   pageInfo.textContent = "Page " + page + " of " + totalPages;
+
+  if (pageNums) {
+    var buttons = [];
+    var start = Math.max(1, page - 2);
+    var end = Math.min(totalPages, page + 2);
+
+    if (start > 1) {
+      buttons.push('<button class="page-num" data-page="1">1</button>');
+      if (start > 2) buttons.push('<span class="page-dots">...</span>');
+    }
+
+    for (var i = start; i <= end; i++) {
+      buttons.push('<button class="page-num' + (i === page ? ' active' : '') + '" data-page="' + i + '">' + i + '</button>');
+    }
+
+    if (end < totalPages) {
+      if (end < totalPages - 1) buttons.push('<span class="page-dots">...</span>');
+      buttons.push('<button class="page-num" data-page="' + totalPages + '">' + totalPages + '</button>');
+    }
+
+    pageNums.innerHTML = buttons.join("");
+
+    pageNums.querySelectorAll("[data-page]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        currentPage = parseInt(btn.dataset.page, 10);
+        fetchStatus();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    });
+  }
 }
 
 function updateStatus(data, fromCache) {
@@ -480,6 +512,37 @@ function showIosBanner() {
   });
 }
 
+function closeNotifPanel() {
+  var panel = document.getElementById("notif-panel");
+  panel.hidden = true;
+  document.getElementById("notif-panel-main").hidden = false;
+  document.getElementById("notif-panel-confirm").hidden = true;
+}
+
+function toggleNotifPanel() {
+  var panel = document.getElementById("notif-panel");
+  if (panel.hidden) {
+    panel.hidden = false;
+  } else {
+    closeNotifPanel();
+  }
+}
+
+function openNotifSetupModal(reg) {
+  pendingSubReg = reg;
+  document.querySelectorAll(".notif-setup-check").forEach(function (check) {
+    check.checked = activeShelters.has(check.value);
+  });
+  var anyChecked = document.querySelectorAll(".notif-setup-check:checked").length > 0;
+  document.getElementById("notif-setup-confirm").disabled = !anyChecked;
+  document.getElementById("notif-setup-overlay").classList.add("active");
+}
+
+function closeNotifSetupModal() {
+  document.getElementById("notif-setup-overlay").classList.remove("active");
+  pendingSubReg = null;
+}
+
 function initSubscribeButton() {
   var btn = document.getElementById("subscribe-btn");
 
@@ -497,7 +560,6 @@ function initSubscribeButton() {
   navigator.serviceWorker.ready.then(function (reg) {
     reg.pushManager.getSubscription().then(function (sub) {
       if (sub) {
-        btn.textContent = "Turn Off Alerts";
         btn.classList.add("subscribed");
         var subJson = sub.toJSON();
         currentSubData = { endpoint: sub.endpoint, keys: { p256dh: subJson.keys.p256dh, auth: subJson.keys.auth } };
@@ -519,9 +581,9 @@ function initSubscribeButton() {
     navigator.serviceWorker.ready.then(function (reg) {
       reg.pushManager.getSubscription().then(function (sub) {
         if (sub) {
-          unsubscribe(sub, btn);
+          toggleNotifPanel();
         } else {
-          subscribe(reg, btn);
+          openNotifSetupModal(reg);
         }
       });
     });
@@ -559,7 +621,6 @@ function subscribe(reg, btn) {
       });
     })
     .then(function () {
-      btn.textContent = "Turn Off Alerts";
       btn.classList.add("subscribed");
       showNotifShelterFilter();
     });
@@ -582,7 +643,6 @@ function unsubscribe(sub, btn) {
       return sub.unsubscribe();
     })
     .then(function () {
-      btn.textContent = "Get Alerts";
       btn.classList.remove("subscribed");
       currentSubData = null;
       hideNotifShelterFilter();
@@ -606,7 +666,7 @@ function initTabs() {
 }
 
 function initSortBar() {
-  var buttons = document.querySelectorAll(".sort-btn[data-sort]");
+  var buttons = document.querySelectorAll("[data-sort]");
   buttons.forEach(function (btn) {
     if (btn.dataset.sort === currentSort) {
       btn.classList.add("active");
@@ -625,7 +685,7 @@ function initSortBar() {
 }
 
 function initShelterFilter() {
-  var buttons = document.querySelectorAll(".sort-btn[data-shelter]");
+  var buttons = document.querySelectorAll("[data-shelter]");
   buttons.forEach(function (btn) {
     var shelterId = btn.dataset.shelter;
     btn.classList.toggle("active", activeShelters.has(shelterId));
@@ -660,15 +720,13 @@ function updateNotifPreferences() {
 }
 
 function showNotifShelterFilter() {
-  var filter = document.getElementById("notif-shelter-filter");
-  filter.hidden = false;
-  filter.querySelectorAll("[data-notif-shelter]").forEach(function (btn) {
+  document.querySelectorAll("[data-notif-shelter]").forEach(function (btn) {
     btn.classList.toggle("active", activeNotifShelters.has(btn.dataset.notifShelter));
   });
 }
 
 function hideNotifShelterFilter() {
-  document.getElementById("notif-shelter-filter").hidden = true;
+  closeNotifPanel();
 }
 
 function initNotifShelterFilter() {
@@ -726,6 +784,35 @@ document.getElementById("next-btn").addEventListener("click", function () {
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
+document.getElementById("unsubscribe-btn").addEventListener("click", function () {
+  document.getElementById("notif-panel-main").hidden = true;
+  document.getElementById("notif-panel-confirm").hidden = false;
+});
+
+document.getElementById("unsubscribe-cancel-btn").addEventListener("click", function () {
+  document.getElementById("notif-panel-main").hidden = false;
+  document.getElementById("notif-panel-confirm").hidden = true;
+});
+
+document.getElementById("unsubscribe-confirm-btn").addEventListener("click", function () {
+  navigator.serviceWorker.ready.then(function (reg) {
+    reg.pushManager.getSubscription().then(function (sub) {
+      if (sub) {
+        var btn = document.getElementById("subscribe-btn");
+        unsubscribe(sub, btn);
+      }
+    });
+  });
+});
+
+document.addEventListener("click", function (e) {
+  var group = document.querySelector(".notif-group");
+  var panel = document.getElementById("notif-panel");
+  if (group && !group.contains(e.target) && !panel.hidden) {
+    closeNotifPanel();
+  }
+});
+
 document.getElementById("modal-close").addEventListener("click", closeModal);
 document.getElementById("modal-overlay").addEventListener("click", function (e) {
   if (e.target === this) {
@@ -735,7 +822,44 @@ document.getElementById("modal-overlay").addEventListener("click", function (e) 
 document.addEventListener("keydown", function (e) {
   if (e.key === "Escape") {
     closeModal();
+    var panel = document.getElementById("notif-panel");
+    if (!panel.hidden) {
+      closeNotifPanel();
+    }
+    var setupOverlay = document.getElementById("notif-setup-overlay");
+    if (setupOverlay.classList.contains("active")) {
+      closeNotifSetupModal();
+    }
   }
+});
+
+document.getElementById("notif-setup-confirm").addEventListener("click", function () {
+  if (!pendingSubReg) return;
+  var selected = [];
+  document.querySelectorAll(".notif-setup-check:checked").forEach(function (check) {
+    selected.push(check.value);
+  });
+  if (selected.length === 0) return;
+  activeNotifShelters = new Set(selected);
+  localStorage.setItem(NOTIF_SHELTER_KEY, JSON.stringify(selected));
+  var btn = document.getElementById("subscribe-btn");
+  subscribe(pendingSubReg, btn);
+  closeNotifSetupModal();
+});
+
+document.getElementById("notif-setup-cancel").addEventListener("click", closeNotifSetupModal);
+
+document.getElementById("notif-setup-overlay").addEventListener("click", function (e) {
+  if (e.target === this) {
+    closeNotifSetupModal();
+  }
+});
+
+document.querySelectorAll(".notif-setup-check").forEach(function (check) {
+  check.addEventListener("change", function () {
+    var anyChecked = document.querySelectorAll(".notif-setup-check:checked").length > 0;
+    document.getElementById("notif-setup-confirm").disabled = !anyChecked;
+  });
 });
 
 window.addEventListener("online", handleOnlineOffline);
