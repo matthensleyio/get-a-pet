@@ -2,6 +2,7 @@ namespace Api.DomainModels;
 
 public sealed record AdoptedDog(
     string Aid,
+    string ShelterId,
     string? Name,
     string? Age,
     string? Gender,

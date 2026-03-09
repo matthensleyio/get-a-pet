@@ -34,6 +34,12 @@
         </div>
         <span id="last-checked" class="last-checked"></span>
         <button id="subscribe-btn" class="subscribe-btn" hidden>Get Alerts</button>
+        <div id="notif-shelter-filter" class="notif-shelter-filter" hidden>
+          <span class="notif-label">Notify me about:</span>
+          <button class="sort-btn active" data-notif-shelter="khs">KHS</button>
+          <button class="sort-btn active" data-notif-shelter="kcpp">KC Pet Project</button>
+          <button class="sort-btn active" data-notif-shelter="gpspca">Great Plains SPCA</button>
+        </div>
       </div>
     </div>
   </header>
@@ -70,7 +76,22 @@
         </div>
       </div>
 
+      <div class="shelter-filter-bar">
+        <span class="sort-label">Shelter</span>
+        <div class="sort-options">
+          <button class="sort-btn active" data-shelter="khs">KHS</button>
+          <button class="sort-btn active" data-shelter="kcpp">KC Pet Project</button>
+          <button class="sort-btn active" data-shelter="gpspca">Great Plains SPCA</button>
+        </div>
+      </div>
+
       <div id="dog-grid" class="dog-grid"></div>
+
+      <div id="pagination" class="pagination" hidden>
+        <button id="prev-btn" class="page-btn">&larr; Prev</button>
+        <span id="page-info" class="page-info"></span>
+        <button id="next-btn" class="page-btn">Next &rarr;</button>
+      </div>
 
       <div id="empty-state" class="empty-state" hidden>
         <div class="empty-paw" aria-hidden="true">

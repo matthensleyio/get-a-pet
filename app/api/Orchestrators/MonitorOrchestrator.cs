@@ -34,9 +34,9 @@ public sealed class MonitorOrchestrator(
 
         var diff = dogDiffEngine.ComputeDiff(currentDogs, state);
 
-        var newDogAids = diff.NewDogs.Select(d => d.Aid).ToHashSet();
+        var newDogKeys = diff.NewDogs.Select(DogDiffEngine.CompositeKey).ToHashSet();
         var existingDogs = currentDogs
-            .Where(d => !newDogAids.Contains(d.Aid))
+            .Where(d => !newDogKeys.Contains(DogDiffEngine.CompositeKey(d)))
             .ToList();
 
         var dogsToStore = await HandleNewDogsAsync(currentDogs, diff.NewDogs, existingDogs, ct);
@@ -44,7 +44,7 @@ public sealed class MonitorOrchestrator(
         if (diff.RemovedAids.Count > 0)
         {
             logger.LogInformation("{Count} dog(s) removed", diff.RemovedAids.Count);
-            var adoptedDogs = await dogRepository.GetByAidsAsync(diff.RemovedAids, ct);
+            var adoptedDogs = await dogRepository.GetByKeysAsync(diff.RemovedAids, ct);
             await adoptedDogRepository.SaveAsync(adoptedDogs, DateTimeOffset.UtcNow, ct);
             await dogRepository.RemoveDogsAsync(diff.RemovedAids, ct);
         }
@@ -75,7 +75,7 @@ public sealed class MonitorOrchestrator(
         var dogsToFetch = newDogs.Concat(backfillDogs).ToList();
 
         var detailTasks = dogsToFetch
-            .Select(d => scrapingEngine.GetDogDetailAsync(d.Aid, ct))
+            .Select(d => scrapingEngine.GetDogDetailAsync(d.Aid, d.ShelterId, ct))
             .ToList();
 
         var details = await Task.WhenAll(detailTasks);
@@ -91,16 +91,19 @@ public sealed class MonitorOrchestrator(
                 CurrentLocation = detail.CurrentLocation,
                 IntakeDate = detail.IntakeDate ?? dog.IntakeDate
             } : dog)
-            .ToDictionary(d => d.Aid);
+            .ToDictionary(DogDiffEngine.CompositeKey);
 
         if (newDogs.Count > 0)
         {
             var subscriptions = await subscriptionRepository.GetAllAsync(ct);
 
-            foreach (var dog in newDogs.Select(d => enrichedDogs.TryGetValue(d.Aid, out var e) ? e : d))
+            foreach (var dog in newDogs.Select(d => enrichedDogs.TryGetValue(DogDiffEngine.CompositeKey(d), out var e) ? e : d))
             {
                 var payload = notificationEngine.BuildPayload(dog);
-                var sendTasks = subscriptions
+                var relevantSubs = subscriptions
+                    .Where(s => s.ShelterIds.Count == 0 || s.ShelterIds.Contains(dog.ShelterId))
+                    .ToList();
+                var sendTasks = relevantSubs
                     .Select(sub => SendAndCleanupAsync(payload, sub, ct))
                     .ToList();
 
@@ -109,7 +112,7 @@ public sealed class MonitorOrchestrator(
         }
 
         return allCurrentDogs
-            .Select(dog => enrichedDogs.TryGetValue(dog.Aid, out var enriched) ? enriched : dog)
+            .Select(dog => enrichedDogs.TryGetValue(DogDiffEngine.CompositeKey(dog), out var enriched) ? enriched : dog)
             .ToList();
     }
 
@@ -131,13 +134,17 @@ public sealed class MonitorOrchestrator(
         {
             logger.LogWarning("Transient push failure for {Endpoint}: {Message}", sub.Endpoint, ex.Message);
         }
+        catch (HttpRequestException ex)
+        {
+            logger.LogWarning("Network error sending push to {Endpoint}: {Message}", sub.Endpoint, ex.Message);
+        }
     }
 
     private async Task SaveCurrentStateAsync(IReadOnlyList<Dog> dogs, CancellationToken ct)
     {
-        var aids = dogs.Select(d => d.Aid).ToList();
-        var dogMap = dogs.ToDictionary(d => d.Aid, d => d.Name ?? "Unknown");
-        var state = new SiteState(aids, dogMap, DateTimeOffset.UtcNow);
+        var keys = dogs.Select(DogDiffEngine.CompositeKey).ToList();
+        var dogMap = dogs.ToDictionary(DogDiffEngine.CompositeKey, d => d.Name ?? "Unknown");
+        var state = new SiteState(keys, dogMap, DateTimeOffset.UtcNow);
 
         await stateRepository.SaveStateAsync(state, ct);
     }

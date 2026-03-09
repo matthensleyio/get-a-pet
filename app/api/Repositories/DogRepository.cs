@@ -2,6 +2,7 @@ using Azure;
 using Azure.Data.Tables;
 
 using Api.DomainModels;
+using Api.Engines;
 
 namespace Api.Repositories;
 
@@ -25,11 +26,12 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
     {
         foreach (var dog in dogs)
         {
+            var rowKey = DogDiffEngine.CompositeKey(dog);
             TableEntity? existing = null;
 
             try
             {
-                var response = await _tableClient.GetEntityAsync<TableEntity>("dog", dog.Aid, cancellationToken: ct);
+                var response = await _tableClient.GetEntityAsync<TableEntity>("dog", rowKey, cancellationToken: ct);
                 existing = response.Value;
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
@@ -38,18 +40,20 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
 
             if (existing is not null)
             {
-                await _tableClient.DeleteEntityAsync("dog", dog.Aid, existing.ETag, ct);
+                await _tableClient.DeleteEntityAsync("dog", rowKey, existing.ETag, ct);
             }
 
             var firstSeen = existing?.GetDateTimeOffset("FirstSeen") ?? DateTimeOffset.UtcNow;
-            await _tableClient.AddEntityAsync(BuildEntity(dog, firstSeen), ct);
+            await _tableClient.AddEntityAsync(BuildEntity(dog, rowKey, firstSeen), ct);
         }
     }
 
-    private static TableEntity BuildEntity(Dog dog, DateTimeOffset firstSeen)
+    private static TableEntity BuildEntity(Dog dog, string rowKey, DateTimeOffset firstSeen)
     {
-        return new TableEntity("dog", dog.Aid)
+        return new TableEntity("dog", rowKey)
         {
+            ["Aid"] = dog.Aid,
+            ["ShelterId"] = dog.ShelterId,
             ["Name"] = dog.Name,
             ["Age"] = dog.Age,
             ["Gender"] = dog.Gender,
@@ -67,15 +71,15 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
         };
     }
 
-    public async Task<IReadOnlyList<Dog>> GetByAidsAsync(IReadOnlyList<string> aids, CancellationToken ct)
+    public async Task<IReadOnlyList<Dog>> GetByKeysAsync(IReadOnlyList<string> compositeKeys, CancellationToken ct)
     {
         var dogs = new List<Dog>();
 
-        foreach (var aid in aids)
+        foreach (var key in compositeKeys)
         {
             try
             {
-                var response = await _tableClient.GetEntityAsync<TableEntity>("dog", aid, cancellationToken: ct);
+                var response = await _tableClient.GetEntityAsync<TableEntity>("dog", key, cancellationToken: ct);
                 dogs.Add(MapToDog(response.Value));
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
@@ -86,13 +90,13 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
         return dogs;
     }
 
-    public async Task RemoveDogsAsync(IReadOnlyList<string> aids, CancellationToken ct)
+    public async Task RemoveDogsAsync(IReadOnlyList<string> compositeKeys, CancellationToken ct)
     {
-        foreach (var aid in aids)
+        foreach (var key in compositeKeys)
         {
             try
             {
-                await _tableClient.DeleteEntityAsync("dog", aid, cancellationToken: ct);
+                await _tableClient.DeleteEntityAsync("dog", key, cancellationToken: ct);
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
@@ -103,7 +107,8 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
     private static Dog MapToDog(TableEntity entity)
     {
         return new Dog(
-            entity.RowKey,
+            entity.GetString("Aid") ?? entity.RowKey,
+            entity.GetString("ShelterId") ?? "khs",
             entity.GetString("Name"),
             entity.GetString("Age"),
             entity.GetString("Gender"),

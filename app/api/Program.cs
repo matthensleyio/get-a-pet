@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
+using Api.DomainModels;
 using Api.Engines;
 using Api.Orchestrators;
 using Api.Repositories;
@@ -22,6 +23,14 @@ public sealed class Program
                     ?? ctx.Configuration["STORAGE_CONNECTION_STRING"];
                 services.AddSingleton(_ => new TableServiceClient(connectionString));
                 services.AddHttpClient("PetBridge", c => c.Timeout = TimeSpan.FromSeconds(30));
+
+                IReadOnlyList<ShelterConfig> shelters =
+                [
+                    new ShelterConfig("khs", "KHS", 2, "https://kshumane.org/adoption/pet-details/?aid={0}&cid=2&tid=Dog", "At KHS Since:"),
+                    new ShelterConfig("kcpp", "KC Pet Project", 11, "https://kcpetproject.org/adopt/animal-details/?aid={0}&cid=11&tid=Dog", "Here Since:"),
+                    new ShelterConfig("gpspca", "Great Plains SPCA", 17, "https://www.greatplainsspca.org/adopt/adoptable-animal-details/?aid={0}&cid=17&tid=Dog", "At GPSPCA Since:")
+                ];
+                services.AddSingleton(shelters);
 
                 services.AddScoped<StateRepository>();
                 services.AddScoped<DogRepository>();

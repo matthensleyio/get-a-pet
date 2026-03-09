@@ -2,4 +2,5 @@ namespace Api.Dtos;
 
 public sealed record PushSubscriptionRequestDto(
     string Endpoint,
-    PushKeysDto Keys);
+    PushKeysDto Keys,
+    IReadOnlyList<string>? ShelterIds);

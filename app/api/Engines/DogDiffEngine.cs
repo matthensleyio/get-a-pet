@@ -6,17 +6,19 @@ public sealed class DogDiffEngine
 {
     public DogDiffResult ComputeDiff(IReadOnlyList<Dog> current, SiteState previous)
     {
-        var currentAids = current.Select(d => d.Aid).ToHashSet();
-        var previousAids = previous.KnownAids.ToHashSet();
+        var currentKeys = current.Select(d => CompositeKey(d)).ToHashSet();
+        var previousKeys = previous.KnownAids.ToHashSet();
 
         var newDogs = current
-            .Where(d => !previousAids.Contains(d.Aid))
+            .Where(d => !previousKeys.Contains(CompositeKey(d)))
             .ToList();
 
         var removedAids = previous.KnownAids
-            .Where(aid => !currentAids.Contains(aid))
+            .Where(key => !currentKeys.Contains(key))
             .ToList();
 
         return new DogDiffResult(newDogs, removedAids);
     }
+
+    public static string CompositeKey(Dog dog) => $"{dog.ShelterId}-{dog.Aid}";
 }

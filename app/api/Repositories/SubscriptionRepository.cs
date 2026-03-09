@@ -20,10 +20,15 @@ public sealed class SubscriptionRepository(TableServiceClient tableServiceClient
 
         await foreach (var entity in _tableClient.QueryAsync<TableEntity>(cancellationToken: ct))
         {
+            var shelterIdsRaw = entity.GetString("ShelterIds") ?? string.Empty;
+            var shelterIds = shelterIdsRaw.Length > 0
+                ? shelterIdsRaw.Split(',').Where(s => s.Length > 0).ToList()
+                : (IReadOnlyList<string>)[];
             subscriptions.Add(new PushSubscription(
                 entity.GetString("Endpoint") ?? string.Empty,
                 entity.GetString("P256dh") ?? string.Empty,
-                entity.GetString("Auth") ?? string.Empty));
+                entity.GetString("Auth") ?? string.Empty,
+                shelterIds));
         }
 
         return subscriptions;
@@ -37,7 +42,8 @@ public sealed class SubscriptionRepository(TableServiceClient tableServiceClient
         {
             ["Endpoint"] = sub.Endpoint,
             ["P256dh"] = sub.P256dh,
-            ["Auth"] = sub.Auth
+            ["Auth"] = sub.Auth,
+            ["ShelterIds"] = string.Join(',', sub.ShelterIds)
         };
 
         await _tableClient.UpsertEntityAsync(entity, TableUpdateMode.Replace, ct);

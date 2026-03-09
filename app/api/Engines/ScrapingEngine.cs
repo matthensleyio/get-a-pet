@@ -4,11 +4,10 @@ using Api.DomainModels;
 
 namespace Api.Engines;
 
-public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
+public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory, IReadOnlyList<ShelterConfig> shelters)
 {
-    private const string ListUrl = "https://petbridge.org/animals/animals-all-responsive.php?ClientID=2&Species=Dog";
-    private const string DetailUrlTemplate = "https://petbridge.org/animals/animals-detail.php?ID={0}&ClientID=2&Species=Dog";
-    private const string ProfileUrlTemplate = "https://kshumane.org/adoption/pet-details/?aid={0}&cid=2&tid=Dog";
+    private const string ListUrlTemplate = "https://petbridge.org/animals/animals-all-responsive.php?ClientID={0}&Species=Dog";
+    private const string DetailUrlTemplate = "https://petbridge.org/animals/animals-detail.php?ID={0}&ClientID={1}&Species=Dog";
 
     private static readonly Regex CardRegex = new(
         @"(?s)<div class=""animal_list_box[^""]*""[^>]*>.*?</div>\s*</div>\s*<!-- animal_list_box -->",
@@ -56,13 +55,56 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
     private static readonly Regex DaysOldRegex = new(
         @"days_old_(\d+)", RegexOptions.Compiled);
 
-    private static readonly Regex IntakeDateRegex = new(
-        @"At KHS Since:</span>\s*([A-Za-z]+ \d+, \d+)", RegexOptions.Compiled);
-
     public async Task<IReadOnlyList<Dog>> GetAllDogsAsync(CancellationToken ct)
     {
+        var tasks = shelters
+            .Select(shelter => GetDogsForShelterAsync(shelter, ct))
+            .ToList();
+
+        var results = await Task.WhenAll(tasks);
+
+        return results.SelectMany(d => d).ToList();
+    }
+
+    public async Task<DogDetail?> GetDogDetailAsync(string aid, string shelterId, CancellationToken ct)
+    {
+        var shelter = shelters.First(s => s.ShelterId == shelterId);
         var client = httpClientFactory.CreateClient("PetBridge");
-        var html = await client.GetStringAsync(ListUrl, ct);
+        var url = String.Format(DetailUrlTemplate, aid, shelter.PetBridgeClientId);
+        var intakeDatePattern = new Regex(
+            Regex.Escape(shelter.IntakeDateLabel) + @"</span>\s*([A-Za-z]+ \d+, \d+)",
+            RegexOptions.Compiled);
+
+        try
+        {
+            var html = await client.GetStringAsync(url, ct);
+
+            var intakeDateStr = ExtractGroup(intakeDatePattern, html)?.Trim();
+            DateTimeOffset? intakeDate = intakeDateStr is not null
+                && DateTimeOffset.TryParse(intakeDateStr, out var parsed)
+                ? parsed
+                : null;
+
+            return new DogDetail(
+                ExtractGroup(BreedRegex, html)?.Trim(),
+                ExtractGroup(ColorRegex, html)?.Trim(),
+                ExtractGroup(SizeRegex, html)?.Trim(),
+                ExtractGroup(WeightRegex, html)?.Trim(),
+                ExtractGroup(AdoptionFeeRegex, html)?.Trim(),
+                ExtractGroup(LocationRegex, html)?.Trim(),
+                intakeDate);
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+    }
+
+    private async Task<IReadOnlyList<Dog>> GetDogsForShelterAsync(ShelterConfig shelter, CancellationToken ct)
+    {
+        var client = httpClientFactory.CreateClient("PetBridge");
+        var url = String.Format(ListUrlTemplate, shelter.PetBridgeClientId);
+        var html = await client.GetStringAsync(url, ct);
         var cards = CardRegex.Matches(html);
         var dogs = new List<Dog>();
         var today = new DateTimeOffset(DateTimeOffset.UtcNow.Date, TimeSpan.Zero);
@@ -82,46 +124,16 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory)
             var age = ExtractGroup(AgeRegex, cardHtml);
             var gender = ExtractGroup(GenderRegex, cardHtml);
             var photoUrl = ExtractPhotoUrl(cardHtml);
-            var profileUrl = String.Format(ProfileUrlTemplate, aid);
+            var profileUrl = String.Format(shelter.ProfileUrlTemplate, aid);
             var daysOldMatch = DaysOldRegex.Match(cardHtml);
             DateTimeOffset? listingDate = daysOldMatch.Success
                 ? today.AddDays(-int.Parse(daysOldMatch.Groups[1].Value))
                 : null;
 
-            dogs.Add(new Dog(aid, name, age, gender, photoUrl, null, null, null, null, null, null, profileUrl, default, null, listingDate));
+            dogs.Add(new Dog(aid, shelter.ShelterId, name, age, gender, photoUrl, null, null, null, null, null, null, profileUrl, default, null, listingDate));
         }
 
         return dogs;
-    }
-
-    public async Task<DogDetail?> GetDogDetailAsync(string aid, CancellationToken ct)
-    {
-        var client = httpClientFactory.CreateClient("PetBridge");
-        var url = String.Format(DetailUrlTemplate, aid);
-
-        try
-        {
-            var html = await client.GetStringAsync(url, ct);
-
-            var intakeDateStr = ExtractGroup(IntakeDateRegex, html)?.Trim();
-            DateTimeOffset? intakeDate = intakeDateStr is not null
-                && DateTimeOffset.TryParse(intakeDateStr, out var parsed)
-                ? parsed
-                : null;
-
-            return new DogDetail(
-                ExtractGroup(BreedRegex, html)?.Trim(),
-                ExtractGroup(ColorRegex, html)?.Trim(),
-                ExtractGroup(SizeRegex, html)?.Trim(),
-                ExtractGroup(WeightRegex, html)?.Trim(),
-                ExtractGroup(AdoptionFeeRegex, html)?.Trim(),
-                ExtractGroup(LocationRegex, html)?.Trim(),
-                intakeDate);
-        }
-        catch (HttpRequestException)
-        {
-            return null;
-        }
     }
 
     private static string? ExtractGroup(Regex regex, string input)

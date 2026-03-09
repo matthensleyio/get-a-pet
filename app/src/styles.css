@@ -143,6 +143,15 @@ body.offline #content-wrapper {
   animation: none;
 }
 
+.status-pill--paused {
+  cursor: pointer;
+}
+
+.status-pill--paused:hover {
+  background: var(--border);
+  border-color: var(--text-muted);
+}
+
 .status-indicator.error {
   background: #E53E3E;
   animation: none;
@@ -185,6 +194,26 @@ body.offline #content-wrapper {
 
 .subscribe-btn.subscribed:hover {
   background: var(--secondary-dark);
+}
+
+/* ── Notification Shelter Filter ─────────────────────── */
+
+.notif-shelter-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  width: 100%;
+}
+
+.notif-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  flex-shrink: 0;
 }
 
 /* ── Offline Banner ───────────────────────────────────── */
@@ -332,6 +361,16 @@ body.offline .offline-banner {
   border-color: var(--text);
 }
 
+/* ── Shelter Filter Bar ───────────────────────────────── */
+
+.shelter-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
 /* ── Dog Grid ─────────────────────────────────────────── */
 
 .dog-grid {
@@ -436,6 +475,45 @@ body.offline .offline-banner {
   text-transform: uppercase;
   letter-spacing: 0.07em;
   pointer-events: none;
+}
+
+/* ── Pagination ──────────────────────────────────────── */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.page-btn {
+  padding: 8px 20px;
+  border: 1.5px solid var(--border);
+  border-radius: 100px;
+  background: var(--card);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: var(--border);
+}
+
+.page-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.page-info {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 /* ── Empty State ─────────────────────────────────────── */

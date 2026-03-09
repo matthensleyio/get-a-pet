@@ -20,7 +20,8 @@ public sealed class MonitorHttpFunction(
         CancellationToken ct)
     {
         var centralNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, CentralTimeZone);
-        if (centralNow.Hour < 5 || centralNow.Hour >= 20)
+        var force = req.Query["force"] == "true";
+        if (!force && (centralNow.Hour < 5 || centralNow.Hour >= 20))
         {
             return new BadRequestObjectResult($"Monitor is outside active hours. Current Central time: {centralNow:HH:mm}. Active window: 05:00–20:00.");
         }

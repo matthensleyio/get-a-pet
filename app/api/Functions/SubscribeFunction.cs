@@ -24,7 +24,7 @@ public sealed class SubscribeFunction(SubscriptionRepository subscriptionReposit
 
         if (req.Method.Equals("POST", StringComparison.OrdinalIgnoreCase))
         {
-            var subscription = new PushSubscription(dto.Endpoint, dto.Keys.P256dh, dto.Keys.Auth);
+            var subscription = new PushSubscription(dto.Endpoint, dto.Keys.P256dh, dto.Keys.Auth, dto.ShelterIds ?? []);
             await subscriptionRepository.AddAsync(subscription, ct);
         }
         else

@@ -2,6 +2,7 @@ using Azure;
 using Azure.Data.Tables;
 
 using Api.DomainModels;
+using Api.Engines;
 
 namespace Api.Repositories;
 
@@ -35,8 +36,11 @@ public sealed class AdoptedDogRepository(TableServiceClient tableServiceClient)
     {
         foreach (var dog in dogs)
         {
-            var entity = new TableEntity(PartitionKey, dog.Aid)
+            var rowKey = DogDiffEngine.CompositeKey(dog);
+            var entity = new TableEntity(PartitionKey, rowKey)
             {
+                ["Aid"] = dog.Aid,
+                ["ShelterId"] = dog.ShelterId,
                 ["Name"] = dog.Name,
                 ["Age"] = dog.Age,
                 ["Gender"] = dog.Gender,
@@ -89,7 +93,8 @@ public sealed class AdoptedDogRepository(TableServiceClient tableServiceClient)
     private static AdoptedDog MapToAdoptedDog(TableEntity entity)
     {
         return new AdoptedDog(
-            entity.RowKey,
+            entity.GetString("Aid") ?? entity.RowKey,
+            entity.GetString("ShelterId") ?? "khs",
             entity.GetString("Name"),
             entity.GetString("Age"),
             entity.GetString("Gender"),

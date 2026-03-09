@@ -2,7 +2,9 @@ namespace Api.DomainModels;
 
 public sealed record StatusResult(
     IReadOnlyList<Dog> Dogs,
-    int Count,
+    int TotalCount,
+    int Page,
+    int PageSize,
     DateTimeOffset? LastChecked,
     bool IsMonitoringActive,
     IReadOnlyList<AdoptedDog> RecentlyAdopted);

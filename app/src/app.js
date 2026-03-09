@@ -8,13 +8,19 @@ var DB_VERSION = 2;
 var STORE_NAME = "status";
 var POLL_INTERVAL = 30000;
 var SORT_KEY = "khs-sort";
+var SHELTER_FILTER_KEY = "shelter-filter";
+var NOTIF_SHELTER_KEY = "notif-shelters";
+
+var SHELTER_IDS = ["khs", "kcpp", "gpspca"];
+var SHELTER_NAMES = { khs: "KHS", kcpp: "KC Pet Project", gpspca: "Great Plains SPCA" };
 
 var pollTimer = null;
 var MONITOR_INTERVAL = 60000;
 var monitorTimer = null;
 
-function triggerMonitor() {
-  fetch(API_BASE + "/api/monitor", { method: "POST" })
+function triggerMonitor(force) {
+  var url = API_BASE + "/api/monitor" + (force ? "?force=true" : "");
+  fetch(url, { method: "POST" })
     .then(function (res) {
       if (res.ok) {
         return res.json().then(function (body) {
@@ -66,6 +72,34 @@ document.addEventListener("visibilitychange", function () {
 var currentDogs = null;
 var currentAdoptedDogs = null;
 var currentSort = localStorage.getItem(SORT_KEY) || "newest";
+var currentPage = 1;
+
+function loadActiveShelters() {
+  var saved = localStorage.getItem(SHELTER_FILTER_KEY);
+  if (!saved) {
+    return new Set(SHELTER_IDS);
+  }
+  try {
+    var parsed = JSON.parse(saved);
+    return new Set(Array.isArray(parsed) ? parsed : SHELTER_IDS);
+  } catch (e) {
+    return new Set(SHELTER_IDS);
+  }
+}
+
+var activeShelters = loadActiveShelters();
+
+function loadActiveNotifShelters() {
+  try {
+    var saved = JSON.parse(localStorage.getItem(NOTIF_SHELTER_KEY) || "null");
+    return new Set(Array.isArray(saved) ? saved : SHELTER_IDS);
+  } catch (e) {
+    return new Set(SHELTER_IDS);
+  }
+}
+
+var activeNotifShelters = loadActiveNotifShelters();
+var currentSubData = null;
 
 function openDb() {
   return new Promise(function (resolve, reject) {
@@ -132,42 +166,6 @@ function timeAgo(dateStr) {
   return days + "d ago";
 }
 
-function parseAgeMonths(ageStr) {
-  if (!ageStr) return Number.MAX_SAFE_INTEGER;
-  var s = ageStr.toLowerCase();
-  var years = 0;
-  var months = 0;
-  var ym = s.match(/(\d+)\s*year/);
-  if (ym) years = parseInt(ym[1], 10);
-  var mm = s.match(/(\d+)\s*month/);
-  if (mm) months = parseInt(mm[1], 10);
-  if (years === 0 && months === 0) return Number.MAX_SAFE_INTEGER;
-  return years * 12 + months;
-}
-
-function sortDogs(dogs) {
-  var sorted = dogs.slice();
-  if (currentSort === "age") {
-    sorted.sort(function (a, b) {
-      return parseAgeMonths(a.age) - parseAgeMonths(b.age);
-    });
-  } else if (currentSort === "newest") {
-    sorted.sort(function (a, b) {
-      var now = Date.now();
-      var DAY = 86400000;
-      var aListing = a.listingDate ? new Date(a.listingDate).getTime() : 0;
-      var bListing = b.listingDate ? new Date(b.listingDate).getTime() : 0;
-      var aDate = (aListing && now - aListing < DAY) ? aListing : (a.intakeDate ? new Date(a.intakeDate).getTime() : new Date(a.firstSeen).getTime());
-      var bDate = (bListing && now - bListing < DAY) ? bListing : (b.intakeDate ? new Date(b.intakeDate).getTime() : new Date(b.firstSeen).getTime());
-      return bDate - aDate;
-    });
-  } else {
-    sorted.sort(function (a, b) {
-      return (a.name || "").localeCompare(b.name || "");
-    });
-  }
-  return sorted;
-}
 
 function renderDogs(dogs) {
   currentDogs = dogs || null;
@@ -181,8 +179,6 @@ function renderDogs(dogs) {
     return;
   }
 
-  var dogs = sortDogs(dogs);
-
   empty.hidden = true;
   grid.innerHTML = dogs
     .map(function (dog, index) {
@@ -190,9 +186,10 @@ function renderDogs(dogs) {
       var imgTag = imgSrc
         ? '<img src="' + imgSrc + '" alt="' + (dog.name || "Dog") + '" loading="lazy">'
         : '<img src="" alt="No photo" style="background:var(--border)">';
-      var isNew = dog.listingDate && (Date.now() - new Date(dog.listingDate).getTime()) < 172800000;
+      var isNew = dog.firstSeen && (Date.now() - new Date(dog.firstSeen).getTime()) < 86400000;
       var breed = dog.breed ? dog.breed.replace(/\s*\([^)]+\)/g, "").replace(/\s*\/\s*Mix\s*$/i, "").trim() : null;
-      var tags = [dog.size, dog.weight].filter(Boolean);
+      var shelterName = SHELTER_NAMES[dog.shelterId] || dog.shelterId || null;
+      var tags = [shelterName, dog.size, dog.weight].filter(Boolean);
 
       return (
         '<div class="dog-card" data-aid="' +
@@ -294,6 +291,9 @@ function showModal(dog) {
   document.getElementById("modal-name").textContent = dog.name || "Unknown";
 
   var details = [];
+  if (dog.shelterId) {
+    details.push({ label: "Shelter", value: SHELTER_NAMES[dog.shelterId] || dog.shelterId });
+  }
   if (dog.gender) {
     details.push({ label: "Gender", value: dog.gender });
   }
@@ -312,8 +312,9 @@ function showModal(dog) {
   if (dog.weight) {
     details.push({ label: "Weight", value: dog.weight });
   }
-  if (dog.intakeDate) {
-    details.push({ label: "At shelter since", value: new Date(dog.intakeDate).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) });
+  var shelteredDate = dog.intakeDate || dog.listingDate;
+  if (shelteredDate) {
+    details.push({ label: "At shelter since", value: new Date(shelteredDate).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) });
   }
   if (dog.adoptedAt) {
     details.push({ label: "Adopted", value: timeAgo(dog.adoptedAt) });
@@ -345,9 +346,28 @@ function closeModal() {
   document.getElementById("modal-overlay").classList.remove("active");
 }
 
+function renderPagination(page, pageSize, totalCount) {
+  var container = document.getElementById("pagination");
+  var prevBtn = document.getElementById("prev-btn");
+  var nextBtn = document.getElementById("next-btn");
+  var pageInfo = document.getElementById("page-info");
+  var totalPages = Math.ceil(totalCount / pageSize);
+
+  if (totalPages <= 1) {
+    container.hidden = true;
+    return;
+  }
+
+  container.hidden = false;
+  prevBtn.disabled = page <= 1;
+  nextBtn.disabled = page >= totalPages;
+  pageInfo.textContent = "Page " + page + " of " + totalPages;
+}
+
 function updateStatus(data, fromCache) {
   var indicator = document.getElementById("status-indicator");
   var statusText = document.getElementById("status-text");
+  var statusPill = document.querySelector(".status-pill");
   var lastChecked = document.getElementById("last-checked");
   var countBadge = document.getElementById("count-badge");
   var cacheAge = document.getElementById("cache-age");
@@ -356,16 +376,20 @@ function updateStatus(data, fromCache) {
   if (data.isMonitoringActive) {
     indicator.classList.remove("inactive");
     statusText.textContent = "Monitoring";
+    statusPill.classList.remove("status-pill--paused");
+    statusPill.title = "";
   } else {
     indicator.classList.add("inactive");
     statusText.textContent = "Paused (after hours)";
+    statusPill.classList.add("status-pill--paused");
+    statusPill.title = "Click to force a check";
   }
 
   if (data.lastChecked) {
     lastChecked.textContent = "Updated " + timeAgo(data.lastChecked);
   }
 
-  countBadge.textContent = data.count;
+  countBadge.textContent = data.totalCount;
   countBadge.hidden = false;
 
   if (fromCache && data.lastChecked) {
@@ -373,8 +397,29 @@ function updateStatus(data, fromCache) {
   }
 }
 
+function buildStatusUrl() {
+  var shelters = Array.from(activeShelters);
+  var params = new URLSearchParams({
+    sort: currentSort,
+    page: currentPage,
+  });
+  if (shelters.length < SHELTER_IDS.length) {
+    params.set("shelters", shelters.join(","));
+  }
+  return API_BASE + "/api/status?" + params.toString();
+}
+
+function applyStatusData(data, fromCache) {
+  renderDogs(data.dogs);
+  renderAdoptedDogs(data.recentlyAdopted || []);
+  updateStatus(data, fromCache);
+  if (!fromCache) {
+    renderPagination(data.page, data.pageSize, data.totalCount);
+  }
+}
+
 function fetchStatus() {
-  return fetch(API_BASE + "/api/status")
+  return fetch(buildStatusUrl())
     .then(function (res) {
       return res.json();
     })
@@ -382,24 +427,18 @@ function fetchStatus() {
       if (data.offline) {
         return loadFromDb().then(function (cached) {
           if (cached) {
-            renderDogs(cached.dogs);
-            renderAdoptedDogs(cached.recentlyAdopted || []);
-            updateStatus(cached, true);
+            applyStatusData(cached, true);
           }
         });
       }
 
-      renderDogs(data.dogs);
-      renderAdoptedDogs(data.recentlyAdopted || []);
-      updateStatus(data, false);
+      applyStatusData(data, false);
       return saveToDb(data);
     })
     .catch(function () {
       return loadFromDb().then(function (cached) {
         if (cached) {
-          renderDogs(cached.dogs);
-          renderAdoptedDogs(cached.recentlyAdopted || []);
-          updateStatus(cached, true);
+          applyStatusData(cached, true);
         }
       });
     });
@@ -461,14 +500,17 @@ function initSubscribeButton() {
         btn.textContent = "Turn Off Alerts";
         btn.classList.add("subscribed");
         var subJson = sub.toJSON();
+        currentSubData = { endpoint: sub.endpoint, keys: { p256dh: subJson.keys.p256dh, auth: subJson.keys.auth } };
         fetch(API_BASE + "/api/subscribe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             endpoint: sub.endpoint,
             keys: { p256dh: subJson.keys.p256dh, auth: subJson.keys.auth },
+            shelterIds: Array.from(activeNotifShelters),
           }),
         }).catch(function () {});
+        showNotifShelterFilter();
       }
     });
   });
@@ -502,6 +544,7 @@ function subscribe(reg, btn) {
     })
     .then(function (sub) {
       var subJson = sub.toJSON();
+      currentSubData = { endpoint: sub.endpoint, keys: { p256dh: subJson.keys.p256dh, auth: subJson.keys.auth } };
       return fetch(API_BASE + "/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -511,12 +554,14 @@ function subscribe(reg, btn) {
             p256dh: subJson.keys.p256dh,
             auth: subJson.keys.auth,
           },
+          shelterIds: Array.from(activeNotifShelters),
         }),
       });
     })
     .then(function () {
       btn.textContent = "Turn Off Alerts";
       btn.classList.add("subscribed");
+      showNotifShelterFilter();
     });
 }
 
@@ -539,6 +584,8 @@ function unsubscribe(sub, btn) {
     .then(function () {
       btn.textContent = "Get Alerts";
       btn.classList.remove("subscribed");
+      currentSubData = null;
+      hideNotifShelterFilter();
     });
 }
 
@@ -559,7 +606,7 @@ function initTabs() {
 }
 
 function initSortBar() {
-  var buttons = document.querySelectorAll(".sort-btn");
+  var buttons = document.querySelectorAll(".sort-btn[data-sort]");
   buttons.forEach(function (btn) {
     if (btn.dataset.sort === currentSort) {
       btn.classList.add("active");
@@ -567,22 +614,116 @@ function initSortBar() {
     btn.addEventListener("click", function () {
       if (btn.dataset.sort === currentSort) return;
       currentSort = btn.dataset.sort;
+      currentPage = 1;
       localStorage.setItem(SORT_KEY, currentSort);
       buttons.forEach(function (b) {
         b.classList.toggle("active", b.dataset.sort === currentSort);
       });
-      if (currentDogs) {
-        renderDogs(currentDogs);
-      }
+      fetchStatus();
     });
   });
 }
+
+function initShelterFilter() {
+  var buttons = document.querySelectorAll(".sort-btn[data-shelter]");
+  buttons.forEach(function (btn) {
+    var shelterId = btn.dataset.shelter;
+    btn.classList.toggle("active", activeShelters.has(shelterId));
+    btn.addEventListener("click", function () {
+      if (activeShelters.has(shelterId)) {
+        if (activeShelters.size > 1) {
+          activeShelters.delete(shelterId);
+          btn.classList.remove("active");
+        }
+      } else {
+        activeShelters.add(shelterId);
+        btn.classList.add("active");
+      }
+      localStorage.setItem(SHELTER_FILTER_KEY, JSON.stringify(Array.from(activeShelters)));
+      currentPage = 1;
+      fetchStatus();
+    });
+  });
+}
+
+function updateNotifPreferences() {
+  if (!currentSubData) return;
+  fetch(API_BASE + "/api/subscribe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      endpoint: currentSubData.endpoint,
+      keys: currentSubData.keys,
+      shelterIds: Array.from(activeNotifShelters),
+    }),
+  }).catch(function () {});
+}
+
+function showNotifShelterFilter() {
+  var filter = document.getElementById("notif-shelter-filter");
+  filter.hidden = false;
+  filter.querySelectorAll("[data-notif-shelter]").forEach(function (btn) {
+    btn.classList.toggle("active", activeNotifShelters.has(btn.dataset.notifShelter));
+  });
+}
+
+function hideNotifShelterFilter() {
+  document.getElementById("notif-shelter-filter").hidden = true;
+}
+
+function initNotifShelterFilter() {
+  var buttons = document.querySelectorAll("[data-notif-shelter]");
+  buttons.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var shelterId = btn.dataset.notifShelter;
+      if (activeNotifShelters.has(shelterId)) {
+        if (activeNotifShelters.size > 1) {
+          activeNotifShelters.delete(shelterId);
+          btn.classList.remove("active");
+        }
+      } else {
+        activeNotifShelters.add(shelterId);
+        btn.classList.add("active");
+      }
+      localStorage.setItem(NOTIF_SHELTER_KEY, JSON.stringify(Array.from(activeNotifShelters)));
+      updateNotifPreferences();
+    });
+  });
+}
+
+document.querySelector(".status-pill").addEventListener("click", function () {
+  var pill = this;
+  if (!pill.classList.contains("status-pill--paused")) return;
+  var statusText = document.getElementById("status-text");
+  pill.classList.remove("status-pill--paused");
+  statusText.textContent = "Checking\u2026";
+  triggerMonitor(true);
+  setTimeout(function () {
+    if (!pill.classList.contains("status-pill--paused")) return;
+    statusText.textContent = "Paused (after hours)";
+    pill.classList.add("status-pill--paused");
+  }, 10000);
+});
 
 document.getElementById("ios-banner-dismiss").addEventListener("click", function () {
   var banner = document.getElementById("ios-install-banner");
   banner.classList.remove("visible");
   setTimeout(function () { banner.hidden = true; }, 500);
   localStorage.setItem("ios-banner-dismissed", "1");
+});
+
+document.getElementById("prev-btn").addEventListener("click", function () {
+  if (currentPage > 1) {
+    currentPage--;
+    fetchStatus();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+});
+
+document.getElementById("next-btn").addEventListener("click", function () {
+  currentPage++;
+  fetchStatus();
+  window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
 document.getElementById("modal-close").addEventListener("click", closeModal);
@@ -616,6 +757,8 @@ if ("serviceWorker" in navigator) {
 
 initTabs();
 initSortBar();
+initShelterFilter();
+initNotifShelterFilter();
 initSubscribeButton();
 startPolling();
 startMonitorTrigger();
