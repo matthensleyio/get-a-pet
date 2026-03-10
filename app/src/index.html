@@ -78,7 +78,12 @@
   <main class="container">
     <div class="tab-bar">
       <button class="tab-btn active" data-tab="available">Available <span id="count-badge" class="count-badge" hidden>0</span></button>
+      <button id="tab-btn-favorites" class="tab-btn" data-tab="favorites" hidden>Favorites <span id="favorites-count-badge" class="count-badge favorites-count">0</span></button>
       <button class="tab-btn" data-tab="adopted">Recently Adopted <span id="adopted-count-badge" class="count-badge adopted-count" hidden>0</span></button>
+    </div>
+
+    <div id="tab-favorites" class="tab-panel" hidden>
+      <div id="favorites-grid" class="dog-grid"></div>
     </div>
 
     <div id="tab-available" class="tab-panel">
@@ -170,7 +175,14 @@
         <img id="modal-img" src="" alt="">
       </div>
       <div class="modal-body">
-        <h2 id="modal-name"></h2>
+        <div class="modal-title-row">
+          <h2 id="modal-name"></h2>
+          <button id="modal-fav-btn" class="modal-fav-btn" aria-label="Favorite">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.78-8.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+          </button>
+        </div>
         <div id="modal-details" class="modal-details"></div>
         <a id="modal-link" class="modal-link" href="#" target="_blank" rel="noopener">View on Shelter Website</a>
       </div>
