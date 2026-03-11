@@ -18,6 +18,7 @@ var SHELTER_NAMES = { khs: "KHS", kcpp: "KC Pet Project", gpspca: "Great Plains 
 var pollTimer = null;
 var MONITOR_INTERVAL = 300000;
 var monitorTimer = null;
+var isFetching = false;
 
 function triggerMonitor(force) {
   var url = API_BASE + "/api/monitor" + (force ? "?force=true" : "");
@@ -588,7 +589,28 @@ function applyStatusData(data, fromCache) {
   }
 }
 
+function setLoadingState(loading) {
+  var grid = document.getElementById("dog-grid");
+  if (grid) grid.classList.toggle("grid-loading", loading);
+
+  var interactiveSelectors = [
+    "#prev-btn",
+    "#next-btn",
+    ".page-num",
+    "[data-sort]",
+    "[data-shelter]",
+  ];
+  interactiveSelectors.forEach(function (sel) {
+    document.querySelectorAll(sel).forEach(function (el) {
+      el.disabled = loading;
+    });
+  });
+}
+
 function fetchStatus() {
+  if (isFetching) return Promise.resolve();
+  isFetching = true;
+  setLoadingState(true);
   return fetch(buildStatusUrl())
     .then(function (res) {
       return res.json();
@@ -611,6 +633,10 @@ function fetchStatus() {
           applyStatusData(cached, true);
         }
       });
+    })
+    .finally(function () {
+      isFetching = false;
+      setLoadingState(false);
     });
 }
 

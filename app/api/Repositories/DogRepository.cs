@@ -1,17 +1,24 @@
 using Azure;
 using Azure.Data.Tables;
+using Microsoft.Extensions.Caching.Memory;
 
 using Api.DomainModels;
 using Api.Engines;
 
 namespace Api.Repositories;
 
-public sealed class DogRepository(TableServiceClient tableServiceClient)
+public sealed class DogRepository(TableServiceClient tableServiceClient, IMemoryCache cache)
 {
     private readonly TableClient _tableClient = tableServiceClient.GetTableClient("Dogs");
 
+    private const string DogCacheKey = "all-dogs";
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromSeconds(60);
+
     public async Task<IReadOnlyList<Dog>> GetAllDogsAsync(CancellationToken ct)
     {
+        if (cache.TryGetValue(DogCacheKey, out IReadOnlyList<Dog>? cached))
+            return cached!;
+
         var dogs = new List<Dog>();
 
         await foreach (var entity in _tableClient.QueryAsync<TableEntity>(cancellationToken: ct))
@@ -19,33 +26,48 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
             dogs.Add(MapToDog(entity));
         }
 
+        cache.Set(DogCacheKey, (IReadOnlyList<Dog>)dogs,
+            new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = CacheTtl });
+
         return dogs;
     }
 
     public async Task UpsertDogsAsync(IReadOnlyList<Dog> dogs, CancellationToken ct)
     {
-        foreach (var dog in dogs)
-        {
-            var rowKey = DogDiffEngine.CompositeKey(dog);
-            TableEntity? existing = null;
+        // Parallel GETs to retrieve existing FirstSeen values
+        var existingTasks = dogs
+            .Select(dog => _tableClient.GetEntityIfExistsAsync<TableEntity>(
+                "dog", DogDiffEngine.CompositeKey(dog), cancellationToken: ct))
+            .ToList();
 
-            try
-            {
-                var response = await _tableClient.GetEntityAsync<TableEntity>("dog", rowKey, cancellationToken: ct);
-                existing = response.Value;
-            }
-            catch (RequestFailedException ex) when (ex.Status == 404)
-            {
-            }
+        var existingResults = await Task.WhenAll(existingTasks);
+
+        // Build separate DELETE and ADD lists (same key can't appear twice in one batch)
+        var deleteActions = new List<TableTransactionAction>(dogs.Count);
+        var addActions = new List<TableTransactionAction>(dogs.Count);
+
+        for (var i = 0; i < dogs.Count; i++)
+        {
+            var dog = dogs[i];
+            var rowKey = DogDiffEngine.CompositeKey(dog);
+            var existing = existingResults[i].HasValue ? existingResults[i].Value : null;
+            var firstSeen = existing?.GetDateTimeOffset("FirstSeen") ?? DateTimeOffset.UtcNow;
 
             if (existing is not null)
-            {
-                await _tableClient.DeleteEntityAsync("dog", rowKey, existing.ETag, ct);
-            }
+                deleteActions.Add(new TableTransactionAction(TableTransactionActionType.Delete, existing));
 
-            var firstSeen = existing?.GetDateTimeOffset("FirstSeen") ?? DateTimeOffset.UtcNow;
-            await _tableClient.AddEntityAsync(BuildEntity(dog, rowKey, firstSeen), ct);
+            addActions.Add(new TableTransactionAction(
+                TableTransactionActionType.Add, BuildEntity(dog, rowKey, firstSeen)));
         }
+
+        // Submit DELETEs first, then ADDs — each in batches of 100
+        foreach (var batch in deleteActions.Chunk(100))
+            await _tableClient.SubmitTransactionAsync(batch, ct);
+
+        foreach (var batch in addActions.Chunk(100))
+            await _tableClient.SubmitTransactionAsync(batch, ct);
+
+        cache.Remove(DogCacheKey);
     }
 
     private static TableEntity BuildEntity(Dog dog, string rowKey, DateTimeOffset firstSeen)
@@ -73,35 +95,33 @@ public sealed class DogRepository(TableServiceClient tableServiceClient)
 
     public async Task<IReadOnlyList<Dog>> GetByKeysAsync(IReadOnlyList<string> compositeKeys, CancellationToken ct)
     {
-        var dogs = new List<Dog>();
+        var tasks = compositeKeys
+            .Select(key => _tableClient.GetEntityIfExistsAsync<TableEntity>("dog", key, cancellationToken: ct))
+            .ToList();
 
-        foreach (var key in compositeKeys)
-        {
-            try
-            {
-                var response = await _tableClient.GetEntityAsync<TableEntity>("dog", key, cancellationToken: ct);
-                dogs.Add(MapToDog(response.Value));
-            }
-            catch (RequestFailedException ex) when (ex.Status == 404)
-            {
-            }
-        }
+        var results = await Task.WhenAll(tasks);
 
-        return dogs;
+        return results
+            .Where(r => r.HasValue)
+            .Select(r => MapToDog(r.Value!))
+            .ToList();
     }
 
     public async Task RemoveDogsAsync(IReadOnlyList<string> compositeKeys, CancellationToken ct)
     {
-        foreach (var key in compositeKeys)
+        var deleteTasks = compositeKeys.Select(async key =>
         {
             try
             {
-                await _tableClient.DeleteEntityAsync("dog", key, cancellationToken: ct);
+                await _tableClient.DeleteEntityAsync("dog", key, ETag.All, ct);
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
             }
-        }
+        });
+
+        await Task.WhenAll(deleteTasks);
+        cache.Remove(DogCacheKey);
     }
 
     private static Dog MapToDog(TableEntity entity)
