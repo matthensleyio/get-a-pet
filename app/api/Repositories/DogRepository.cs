@@ -42,29 +42,23 @@ public sealed class DogRepository(TableServiceClient tableServiceClient, IMemory
 
         var existingResults = await Task.WhenAll(existingTasks);
 
-        // Build separate DELETE and ADD lists (same key can't appear twice in one batch)
-        var deleteActions = new List<TableTransactionAction>(dogs.Count);
-        var addActions = new List<TableTransactionAction>(dogs.Count);
+        // UpsertReplace: one action per dog (no duplicate RowKey issue, one batch call)
+        var actions = new List<TableTransactionAction>(dogs.Count);
 
         for (var i = 0; i < dogs.Count; i++)
         {
             var dog = dogs[i];
             var rowKey = DogDiffEngine.CompositeKey(dog);
-            var existing = existingResults[i].HasValue ? existingResults[i].Value : null;
-            var firstSeen = existing?.GetDateTimeOffset("FirstSeen") ?? DateTimeOffset.UtcNow;
+            var firstSeen = existingResults[i].HasValue
+                ? existingResults[i].Value!.GetDateTimeOffset("FirstSeen") ?? DateTimeOffset.UtcNow
+                : DateTimeOffset.UtcNow;
 
-            if (existing is not null)
-                deleteActions.Add(new TableTransactionAction(TableTransactionActionType.Delete, existing));
-
-            addActions.Add(new TableTransactionAction(
-                TableTransactionActionType.Add, BuildEntity(dog, rowKey, firstSeen)));
+            actions.Add(new TableTransactionAction(
+                TableTransactionActionType.UpsertReplace, BuildEntity(dog, rowKey, firstSeen)));
         }
 
-        // Submit DELETEs first, then ADDs — each in batches of 100
-        foreach (var batch in deleteActions.Chunk(100))
-            await _tableClient.SubmitTransactionAsync(batch, ct);
-
-        foreach (var batch in addActions.Chunk(100))
+        // Submit in batches of 100 (Azure Table Storage limit per transaction)
+        foreach (var batch in actions.Chunk(100))
             await _tableClient.SubmitTransactionAsync(batch, ct);
 
         cache.Remove(DogCacheKey);
