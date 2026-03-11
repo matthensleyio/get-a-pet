@@ -71,6 +71,8 @@ document.addEventListener("visibilitychange", function () {
     fetchStatus();
   }
 });
+var PAGE_SIZE = 24;
+var allDogs = [];
 var currentDogs = null;
 var currentAdoptedDogs = null;
 var currentFavoritedDogs = [];
@@ -494,7 +496,7 @@ function renderPagination(page, pageSize, totalCount) {
     pageNums.querySelectorAll("[data-page]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         currentPage = parseInt(btn.dataset.page, 10);
-        fetchStatus();
+        applyFiltersAndRender();
         window.scrollTo({ top: 0, behavior: "smooth" });
       });
     });
@@ -526,67 +528,96 @@ function updateStatus(data, fromCache) {
     lastChecked.textContent = "Updated " + timeAgo(data.lastChecked);
   }
 
-  countBadge.textContent = data.totalCount;
-  countBadge.hidden = false;
-
   if (fromCache && data.lastChecked) {
     cacheAge.textContent = "Last updated: " + timeAgo(data.lastChecked);
   }
 }
 
 function buildStatusUrl() {
-  var shelters = Array.from(activeShelters);
-  var params = new URLSearchParams({
-    sort: currentSort,
-    page: currentPage,
-  });
-  if (shelters.length < SHELTER_IDS.length) {
-    params.set("shelters", shelters.join(","));
-  }
-  if (favorites.length > 0) {
-    params.set("favs", favorites.map(getCompositeKey).join(","));
-  }
-  return API_BASE + "/api/status?" + params.toString();
+  return API_BASE + "/api/status";
 }
 
 function applyStatusData(data, fromCache) {
-  currentDogs = data.dogs;
+  allDogs = data.dogs || [];
   currentAdoptedDogs = data.recentlyAdopted || [];
 
-
   if (!fromCache) {
-    currentFavoritedDogs = data.favoritedDogs || [];
-    currentFavoritedAdoptedDogs = data.favoritedAdoptedDogs || [];
-  }
-  var favoritedFromApi = currentFavoritedDogs.concat(currentFavoritedAdoptedDogs);
-
-  // Prune favorites that are no longer available or recently adopted
-  // If we got favorited dogs back from the API, use those as the source of truth for pruning
-  if (!fromCache && data.favoritedDogs !== undefined) {
-    var apiFavKeys = new Set(favoritedFromApi.map(getCompositeKey));
-    var originalLength = favorites.length;
-    favorites = favorites.filter(function(fav) {
-      return apiFavKeys.has(getCompositeKey(fav));
-    });
-    // Update favorites with potentially newer data from API
-    favorites = favorites.map(function(fav) {
-      var newer = favoritedFromApi.find(function(f) { return getCompositeKey(f) === getCompositeKey(fav); });
-      return newer || fav;
-    });
-    if (favorites.length !== originalLength || favoritedFromApi.length > 0) {
-      saveFavorites();
-    }
+    // Prune favorites to only those still available or recently adopted
+    var stillPresent = new Set(allDogs.concat(currentAdoptedDogs).map(getCompositeKey));
+    var before = favorites.length;
+    favorites = favorites.filter(function (f) { return stillPresent.has(getCompositeKey(f)); });
+    if (favorites.length !== before) saveFavorites();
   }
 
-  renderDogs(data.dogs);
+  updateStatus(data, fromCache);
+  applyFiltersAndRender();
+}
+
+function applyFiltersAndRender() {
+  // 1. Shelter filter
+  var filtered = activeShelters.size === SHELTER_IDS.length
+    ? allDogs
+    : allDogs.filter(function (d) { return activeShelters.has(d.shelterId); });
+
+  // 2. Sort
+  var sorted = sortDogs(filtered, currentSort);
+
+  // 3. Pagination
+  var totalCount = sorted.length;
+  var totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  if (currentPage > totalPages) currentPage = totalPages;
+  var start = (currentPage - 1) * PAGE_SIZE;
+  var pageDogs = sorted.slice(start, start + PAGE_SIZE);
+
+  // 4. Favorites (computed locally)
+  var favKeys = new Set(favorites.map(getCompositeKey));
+  currentFavoritedDogs = allDogs.filter(function (d) { return favKeys.has(getCompositeKey(d)); });
+  currentFavoritedAdoptedDogs = currentAdoptedDogs.filter(function (d) { return favKeys.has(getCompositeKey(d)); });
+
+  // 5. Render
+  currentDogs = pageDogs;
+  renderDogs(pageDogs);
   renderAdoptedDogs(currentAdoptedDogs);
   renderFavorites();
   updateFavoritesTabVisibility();
 
-  updateStatus(data, fromCache);
-  if (!fromCache) {
-    renderPagination(data.page, data.pageSize, data.totalCount);
+  var countBadge = document.getElementById("count-badge");
+  countBadge.textContent = totalCount;
+  countBadge.hidden = false;
+
+  renderPagination(currentPage, PAGE_SIZE, totalCount);
+}
+
+function sortDogs(dogs, sort) {
+  var copy = dogs.slice();
+  if (sort === "age") {
+    copy.sort(function (a, b) {
+      return parseAgeMonths(a.age) - parseAgeMonths(b.age) || (a.name || "").localeCompare(b.name || "");
+    });
+  } else if (sort === "name") {
+    copy.sort(function (a, b) { return (a.name || "").localeCompare(b.name || ""); });
+  } else {
+    copy.sort(function (a, b) {
+      return effectiveSortDate(b) - effectiveSortDate(a) || (a.name || "").localeCompare(b.name || "");
+    });
   }
+  return copy;
+}
+
+function effectiveSortDate(dog) {
+  var listing = dog.listingDate ? new Date(dog.listingDate).getTime() : 0;
+  var intake  = dog.intakeDate  ? new Date(dog.intakeDate).getTime()  : 0;
+  var first   = dog.firstSeen   ? new Date(dog.firstSeen).getTime()   : 0;
+  if (listing && Date.now() - listing < 86400000) return listing;
+  return intake || listing || first;
+}
+
+function parseAgeMonths(age) {
+  if (!age) return Number.MAX_SAFE_INTEGER;
+  var s = age.toLowerCase();
+  var years  = parseInt((s.match(/(\d+)\s*year/)  || [0, 0])[1], 10) || 0;
+  var months = parseInt((s.match(/(\d+)\s*month/) || [0, 0])[1], 10) || 0;
+  return years === 0 && months === 0 ? Number.MAX_SAFE_INTEGER : years * 12 + months;
 }
 
 function setLoadingState(loading) {
@@ -851,7 +882,7 @@ function initSortBar() {
       buttons.forEach(function (b) {
         b.classList.toggle("active", b.dataset.sort === currentSort);
       });
-      fetchStatus();
+      applyFiltersAndRender();
     });
   });
 }
@@ -873,7 +904,7 @@ function initShelterFilter() {
       }
       localStorage.setItem(SHELTER_FILTER_KEY, JSON.stringify(Array.from(activeShelters)));
       currentPage = 1;
-      fetchStatus();
+      applyFiltersAndRender();
     });
   });
 }
@@ -945,14 +976,14 @@ document.getElementById("ios-banner-dismiss").addEventListener("click", function
 document.getElementById("prev-btn").addEventListener("click", function () {
   if (currentPage > 1) {
     currentPage--;
-    fetchStatus();
+    applyFiltersAndRender();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 });
 
 document.getElementById("next-btn").addEventListener("click", function () {
   currentPage++;
-  fetchStatus();
+  applyFiltersAndRender();
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
