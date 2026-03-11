@@ -72,6 +72,8 @@ document.addEventListener("visibilitychange", function () {
 });
 var currentDogs = null;
 var currentAdoptedDogs = null;
+var currentFavoritedDogs = [];
+var currentFavoritedAdoptedDogs = [];
 var currentSort = localStorage.getItem(SORT_KEY) || "newest";
 var currentPage = 1;
 
@@ -268,10 +270,10 @@ function renderFavorites() {
     return;
   }
 
-  // Favorites are stored with full dog data, but we want to sync status if we have it
-  var allCurrent = (currentDogs || []).concat(currentAdoptedDogs || []);
+  // Sync favorites with the API-returned favorites data (independent of current page)
+  var apiData = currentFavoritedDogs.concat(currentFavoritedAdoptedDogs);
   var syncedFavorites = favorites.map(function(fav) {
-    var current = allCurrent.find(function(d) {
+    var current = apiData.find(function(d) {
       return d.aid === fav.aid && d.shelterId === fav.shelterId;
     });
     return current || fav;
@@ -551,7 +553,11 @@ function applyStatusData(data, fromCache) {
   currentAdoptedDogs = data.recentlyAdopted || [];
 
 
-  var favoritedFromApi = (data.favoritedDogs || []).concat(data.favoritedAdoptedDogs || []);
+  if (!fromCache) {
+    currentFavoritedDogs = data.favoritedDogs || [];
+    currentFavoritedAdoptedDogs = data.favoritedAdoptedDogs || [];
+  }
+  var favoritedFromApi = currentFavoritedDogs.concat(currentFavoritedAdoptedDogs);
 
   // Prune favorites that are no longer available or recently adopted
   // If we got favorited dogs back from the API, use those as the source of truth for pruning
