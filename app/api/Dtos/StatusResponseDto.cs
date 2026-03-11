@@ -7,4 +7,6 @@ public sealed record StatusResponseDto(
     int PageSize,
     DateTimeOffset? LastChecked,
     bool IsMonitoringActive,
-    IReadOnlyList<AdoptedDogDto> RecentlyAdopted);
+    IReadOnlyList<AdoptedDogDto> RecentlyAdopted,
+    IReadOnlyList<DogDto> FavoritedDogs,
+    IReadOnlyList<AdoptedDogDto> FavoritedAdoptedDogs);

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 
+using Api.DomainModels;
 using Api.Dtos;
 using Api.Orchestrators;
 
@@ -24,16 +25,35 @@ public sealed class StatusFunction(StatusOrchestrator statusOrchestrator)
             ? sheltersParam.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
             : [];
 
-        var result = await statusOrchestrator.GetStatusAsync(sort, page, pageSize, shelterIds, ct);
+        var favsParam = req.Query["favs"].FirstOrDefault();
+        var favKeys = favsParam is not null
+            ? favsParam.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
+            : [];
+
+        var result = await statusOrchestrator.GetStatusAsync(sort, page, pageSize, shelterIds, favKeys, ct);
 
         var dogDtos = result.Dogs
-            .Select(d => new DogDto(d.Aid, d.ShelterId, d.Name, d.Age, d.Gender, d.PhotoUrl, d.Breed, d.Color, d.Size, d.Weight, d.AdoptionFee, d.CurrentLocation, d.ProfileUrl, d.FirstSeen, d.IntakeDate, d.ListingDate))
+            .Select(MapToDogDto)
             .ToList();
 
         var adoptedDogDtos = result.RecentlyAdopted
-            .Select(d => new AdoptedDogDto(d.Aid, d.ShelterId, d.Name, d.Age, d.Gender, d.PhotoUrl, d.Breed, d.Color, d.Size, d.Weight, d.AdoptionFee, d.CurrentLocation, d.ProfileUrl, d.FirstSeen, d.IntakeDate, d.AdoptedAt))
+            .Select(MapToAdoptedDogDto)
             .ToList();
 
-        return new OkObjectResult(new StatusResponseDto(dogDtos, result.TotalCount, result.Page, result.PageSize, result.LastChecked, result.IsMonitoringActive, adoptedDogDtos));
+        var favDogDtos = result.FavoritedDogs
+            .Select(MapToDogDto)
+            .ToList();
+
+        var favAdoptedDogDtos = result.FavoritedAdoptedDogs
+            .Select(MapToAdoptedDogDto)
+            .ToList();
+
+        return new OkObjectResult(new StatusResponseDto(dogDtos, result.TotalCount, result.Page, result.PageSize, result.LastChecked, result.IsMonitoringActive, adoptedDogDtos, favDogDtos, favAdoptedDogDtos));
     }
+
+    private static DogDto MapToDogDto(Dog d) =>
+        new(d.Aid, d.ShelterId, d.Name, d.Age, d.Gender, d.PhotoUrl, d.Breed, d.Color, d.Size, d.Weight, d.AdoptionFee, d.CurrentLocation, d.ProfileUrl, d.FirstSeen, d.IntakeDate, d.ListingDate);
+
+    private static AdoptedDogDto MapToAdoptedDogDto(AdoptedDog d) =>
+        new(d.Aid, d.ShelterId, d.Name, d.Age, d.Gender, d.PhotoUrl, d.Breed, d.Color, d.Size, d.Weight, d.AdoptionFee, d.CurrentLocation, d.ProfileUrl, d.FirstSeen, d.IntakeDate, d.AdoptedAt);
 }

@@ -540,6 +540,9 @@ function buildStatusUrl() {
   if (shelters.length < SHELTER_IDS.length) {
     params.set("shelters", shelters.join(","));
   }
+  if (favorites.length > 0) {
+    params.set("favs", favorites.map(getCompositeKey).join(","));
+  }
   return API_BASE + "/api/status?" + params.toString();
 }
 
@@ -547,14 +550,25 @@ function applyStatusData(data, fromCache) {
   currentDogs = data.dogs;
   currentAdoptedDogs = data.recentlyAdopted || [];
 
+
+  var favoritedFromApi = (data.favoritedDogs || []).concat(data.favoritedAdoptedDogs || []);
+
   // Prune favorites that are no longer available or recently adopted
-  var allCurrentKeys = new Set(currentDogs.concat(currentAdoptedDogs).map(getCompositeKey));
-  var originalLength = favorites.length;
-  favorites = favorites.filter(function(fav) {
-    return allCurrentKeys.has(getCompositeKey(fav));
-  });
-  if (favorites.length !== originalLength) {
-    saveFavorites();
+  // If we got favorited dogs back from the API, use those as the source of truth for pruning
+  if (!fromCache && data.favoritedDogs !== undefined) {
+    var apiFavKeys = new Set(favoritedFromApi.map(getCompositeKey));
+    var originalLength = favorites.length;
+    favorites = favorites.filter(function(fav) {
+      return apiFavKeys.has(getCompositeKey(fav));
+    });
+    // Update favorites with potentially newer data from API
+    favorites = favorites.map(function(fav) {
+      var newer = favoritedFromApi.find(function(f) { return getCompositeKey(f) === getCompositeKey(fav); });
+      return newer || fav;
+    });
+    if (favorites.length !== originalLength || favoritedFromApi.length > 0) {
+      saveFavorites();
+    }
   }
 
   renderDogs(data.dogs);
