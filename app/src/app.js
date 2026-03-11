@@ -550,6 +550,7 @@ function applyStatusData(data, fromCache) {
   currentDogs = data.dogs;
   currentAdoptedDogs = data.recentlyAdopted || [];
 
+
   var favoritedFromApi = (data.favoritedDogs || []).concat(data.favoritedAdoptedDogs || []);
 
   // Prune favorites that are no longer available or recently adopted
