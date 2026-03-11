@@ -10,6 +10,7 @@ var POLL_INTERVAL = 30000;
 var SORT_KEY = "khs-sort";
 var SHELTER_FILTER_KEY = "shelter-filter";
 var NOTIF_SHELTER_KEY = "notif-shelters";
+var FAVORITES_KEY = "fav-pets";
 
 var SHELTER_IDS = ["khs", "kcpp", "gpspca"];
 var SHELTER_NAMES = { khs: "KHS", kcpp: "KC Pet Project", gpspca: "Great Plains SPCA" };
@@ -88,6 +89,37 @@ function loadActiveShelters() {
 }
 
 var activeShelters = loadActiveShelters();
+
+function loadFavorites() {
+  try {
+    var saved = JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]");
+    return Array.isArray(saved) ? saved : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+var favorites = loadFavorites();
+
+function saveFavorites() {
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+  updateFavoritesTabVisibility();
+}
+
+function updateFavoritesTabVisibility() {
+  var btn = document.getElementById("tab-btn-favorites");
+  var badge = document.getElementById("favorites-count-badge");
+  if (favorites.length > 0) {
+    btn.hidden = false;
+    badge.textContent = favorites.length;
+  } else {
+    btn.hidden = true;
+    var currentTab = document.querySelector(".tab-btn.active").dataset.tab;
+    if (currentTab === "favorites") {
+      document.querySelector('[data-tab="available"]').click();
+    }
+  }
+}
 
 function loadActiveNotifShelters() {
   try {
@@ -168,6 +200,10 @@ function timeAgo(dateStr) {
 }
 
 
+function getCompositeKey(dog) {
+  return (dog.shelterId || "khs") + "-" + dog.aid;
+}
+
 function renderDogs(dogs) {
   currentDogs = dogs || null;
 
@@ -217,6 +253,64 @@ function renderDogs(dogs) {
       var aid = card.dataset.aid;
       var dog = dogs.find(function (d) {
         return d.aid === aid;
+      });
+      if (dog) {
+        showModal(dog);
+      }
+    });
+  });
+}
+
+function renderFavorites() {
+  var grid = document.getElementById("favorites-grid");
+  if (!favorites || favorites.length === 0) {
+    grid.innerHTML = "";
+    return;
+  }
+
+  // Favorites are stored with full dog data, but we want to sync status if we have it
+  var allCurrent = (currentDogs || []).concat(currentAdoptedDogs || []);
+  var syncedFavorites = favorites.map(function(fav) {
+    var current = allCurrent.find(function(d) {
+      return d.aid === fav.aid && d.shelterId === fav.shelterId;
+    });
+    return current || fav;
+  });
+
+  grid.innerHTML = syncedFavorites
+    .map(function (dog, index) {
+      var isAdopted = !!dog.adoptedAt;
+      var imgSrc = dog.photoUrl || "";
+      var imgTag = imgSrc
+        ? '<img src="' + imgSrc + '" alt="' + (dog.name || "Dog") + '" loading="lazy">'
+        : '<img src="" alt="No photo" style="background:var(--surface)">';
+      var isNew = !isAdopted && dog.firstSeen && (Date.now() - new Date(dog.firstSeen).getTime()) < 86400000;
+      var breed = dog.breed ? dog.breed.replace(/\s*\([^)]+\)/g, "").replace(/\s*\/\s*Mix\s*$/i, "").trim() : null;
+      var shelterName = SHELTER_NAMES[dog.shelterId] || dog.shelterId || null;
+      var tags = [shelterName, dog.size, dog.weight].filter(Boolean);
+
+      return (
+        '<div class="dog-card' + (isAdopted ? ' dog-card--adopted' : '') + '" data-aid="' +
+        dog.aid +
+        '" data-shelter="' + dog.shelterId + '" style="--i: ' + Math.min(index, 15) + '">' +
+        imgTag +
+        (isAdopted ? '<span class="adopted-badge">Adopted ' + timeAgo(dog.adoptedAt) + '</span>' : (isNew ? '<span class="new-badge">New</span>' : '')) +
+        '<div class="dog-card-info">' +
+        "<h3>" + (dog.name || "Unknown") + "</h3>" +
+        "<p>" + [dog.gender, dog.age].filter(Boolean).join(" &middot; ") + "</p>" +
+        (breed ? '<p class="dog-card-breed">' + breed + "</p>" : "") +
+        (tags.length ? '<div class="dog-card-tags">' + tags.map(function (t) { return '<span class="dog-card-tag">' + t + "</span>"; }).join("") + "</div>" : "") +
+        "</div></div>"
+      );
+    })
+    .join("");
+
+  grid.querySelectorAll(".dog-card").forEach(function (card) {
+    card.addEventListener("click", function () {
+      var aid = card.dataset.aid;
+      var shelterId = card.dataset.shelter;
+      var dog = syncedFavorites.find(function (d) {
+        return d.aid === aid && d.shelterId === shelterId;
       });
       if (dog) {
         showModal(dog);
@@ -285,8 +379,15 @@ function renderAdoptedDogs(dogs) {
   });
 }
 
+var currentModalDog = null;
+
 function showModal(dog) {
+  currentModalDog = dog;
   var overlay = document.getElementById("modal-overlay");
+  var favBtn = document.getElementById("modal-fav-btn");
+  var isFaved = favorites.some(function(f) { return f.aid === dog.aid && f.shelterId === dog.shelterId; });
+  favBtn.classList.toggle("active", isFaved);
+
   document.getElementById("modal-img").src = dog.photoUrl || "";
   document.getElementById("modal-img").alt = dog.name || "Dog";
   document.getElementById("modal-name").textContent = dog.name || "Unknown";
@@ -439,12 +540,41 @@ function buildStatusUrl() {
   if (shelters.length < SHELTER_IDS.length) {
     params.set("shelters", shelters.join(","));
   }
+  if (favorites.length > 0) {
+    params.set("favs", favorites.map(getCompositeKey).join(","));
+  }
   return API_BASE + "/api/status?" + params.toString();
 }
 
 function applyStatusData(data, fromCache) {
+  currentDogs = data.dogs;
+  currentAdoptedDogs = data.recentlyAdopted || [];
+
+  var favoritedFromApi = (data.favoritedDogs || []).concat(data.favoritedAdoptedDogs || []);
+
+  // Prune favorites that are no longer available or recently adopted
+  // If we got favorited dogs back from the API, use those as the source of truth for pruning
+  if (!fromCache && data.favoritedDogs !== undefined) {
+    var apiFavKeys = new Set(favoritedFromApi.map(getCompositeKey));
+    var originalLength = favorites.length;
+    favorites = favorites.filter(function(fav) {
+      return apiFavKeys.has(getCompositeKey(fav));
+    });
+    // Update favorites with potentially newer data from API
+    favorites = favorites.map(function(fav) {
+      var newer = favoritedFromApi.find(function(f) { return getCompositeKey(f) === getCompositeKey(fav); });
+      return newer || fav;
+    });
+    if (favorites.length !== originalLength || favoritedFromApi.length > 0) {
+      saveFavorites();
+    }
+  }
+
   renderDogs(data.dogs);
-  renderAdoptedDogs(data.recentlyAdopted || []);
+  renderAdoptedDogs(currentAdoptedDogs);
+  renderFavorites();
+  updateFavoritesTabVisibility();
+
   updateStatus(data, fromCache);
   if (!fromCache) {
     renderPagination(data.page, data.pageSize, data.totalCount);
@@ -665,7 +795,11 @@ function initTabs() {
       btn.classList.add("active");
       var tab = btn.dataset.tab;
       document.getElementById("tab-available").hidden = (tab !== "available");
+      document.getElementById("tab-favorites").hidden = (tab !== "favorites");
       document.getElementById("tab-adopted").hidden = (tab !== "adopted");
+      if (tab === "favorites") {
+        renderFavorites();
+      }
     });
   });
 }
@@ -860,6 +994,21 @@ document.getElementById("notif-setup-overlay").addEventListener("click", functio
   }
 });
 
+document.getElementById("modal-fav-btn").addEventListener("click", function() {
+  if (!currentModalDog) return;
+  var dog = currentModalDog;
+  var index = favorites.findIndex(function(f) { return f.aid === dog.aid && f.shelterId === dog.shelterId; });
+  if (index > -1) {
+    favorites.splice(index, 1);
+    this.classList.remove("active");
+  } else {
+    favorites.push(dog);
+    this.classList.add("active");
+  }
+  saveFavorites();
+  renderFavorites();
+});
+
 document.querySelectorAll(".notif-setup-check").forEach(function (check) {
   check.addEventListener("change", function () {
     var anyChecked = document.querySelectorAll(".notif-setup-check:checked").length > 0;
@@ -889,5 +1038,6 @@ initSortBar();
 initShelterFilter();
 initNotifShelterFilter();
 initSubscribeButton();
+updateFavoritesTabVisibility();
 startPolling();
 startMonitorTrigger();
