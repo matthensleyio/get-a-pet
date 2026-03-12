@@ -21,5 +21,4 @@ public sealed class DogDiffEngine
     }
 
     public static string CompositeKey(Dog dog) => $"{dog.ShelterId}-{dog.Aid}";
-    public static string CompositeKey(AdoptedDog dog) => $"{dog.ShelterId}-{dog.Aid}";
 }
