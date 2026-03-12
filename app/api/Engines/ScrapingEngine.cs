@@ -66,6 +66,14 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory, IReadOn
         return results.SelectMany(d => d).ToList();
     }
 
+    public async Task<bool> IsStillAvailableAsync(string aid, string shelterId, CancellationToken ct)
+    {
+        var detail = await GetDogDetailAsync(aid, shelterId, ct);
+        return detail is { } d &&
+               (d.Breed is not null || d.Color is not null || d.Size is not null ||
+                d.Weight is not null || d.AdoptionFee is not null || d.CurrentLocation is not null);
+    }
+
     public async Task<DogDetail?> GetDogDetailAsync(string aid, string shelterId, CancellationToken ct)
     {
         var shelter = shelters.First(s => s.ShelterId == shelterId);

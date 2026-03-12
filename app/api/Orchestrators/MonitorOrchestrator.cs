@@ -39,14 +39,37 @@ public sealed class MonitorOrchestrator(
             .Where(d => !newDogKeys.Contains(DogDiffEngine.CompositeKey(d)))
             .ToList();
 
-        var dogsToStore = await HandleNewDogsAsync(currentDogs, diff.NewDogs, existingDogs, ct);
+        var dogsToStore = (await HandleNewDogsAsync(currentDogs, diff.NewDogs, existingDogs, ct)).ToList();
 
         if (diff.RemovedAids.Count > 0)
         {
-            logger.LogInformation("{Count} dog(s) removed", diff.RemovedAids.Count);
-            var adoptedDogs = await dogRepository.GetByKeysAsync(diff.RemovedAids, ct);
-            await adoptedDogRepository.SaveAsync(adoptedDogs, DateTimeOffset.UtcNow, ct);
-            await dogRepository.RemoveDogsAsync(diff.RemovedAids, ct);
+            logger.LogInformation("{Count} dog(s) removed from listing, verifying…", diff.RemovedAids.Count);
+            var removedDogs = await dogRepository.GetByKeysAsync(diff.RemovedAids, ct);
+
+            var verifyTasks = removedDogs
+                .Select(d => scrapingEngine.IsStillAvailableAsync(d.Aid, d.ShelterId, ct))
+                .ToList();
+            var stillAvailable = await Task.WhenAll(verifyTasks);
+
+            var trulyAdopted = removedDogs.Where((_, i) => !stillAvailable[i]).ToList();
+            var falselyRemoved = removedDogs.Where((_, i) => stillAvailable[i]).ToList();
+
+            if (falselyRemoved.Count > 0)
+            {
+                logger.LogWarning(
+                    "{Count} dog(s) still on PetBridge detail page — not marking adopted: {Names}",
+                    falselyRemoved.Count,
+                    string.Join(", ", falselyRemoved.Select(d => d.Name)));
+                dogsToStore.AddRange(falselyRemoved);
+            }
+
+            if (trulyAdopted.Count > 0)
+            {
+                logger.LogInformation("{Count} dog(s) confirmed adopted", trulyAdopted.Count);
+                var adoptedKeys = trulyAdopted.Select(DogDiffEngine.CompositeKey).ToList();
+                await adoptedDogRepository.SaveAsync(trulyAdopted, DateTimeOffset.UtcNow, ct);
+                await dogRepository.RemoveDogsAsync(adoptedKeys, ct);
+            }
         }
 
         await dogRepository.UpsertDogsAsync(dogsToStore, ct);
