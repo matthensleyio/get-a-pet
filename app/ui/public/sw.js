@@ -64,6 +64,10 @@ self.addEventListener("fetch", function (event) {
     return;
   }
 
+  if (url.hostname.endsWith(".clarity.ms") || url.hostname === "clarity.ms") {
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then(function (response) {

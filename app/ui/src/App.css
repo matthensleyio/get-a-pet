@@ -495,6 +495,11 @@ body.offline .offline-banner {
   color: var(--text-muted);
 }
 
+.favorites-count {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
 .filter-bar {
   display: flex;
   align-items: center;
@@ -555,6 +560,7 @@ body.offline .offline-banner {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 16px;
+  position: relative;
 }
 
 a.dog-card {
@@ -588,6 +594,10 @@ a.dog-card {
 .dog-card:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow-hover);
+}
+
+.dog-card--adopted {
+  filter: grayscale(1) brightness(0.92);
 }
 
 .dog-card img {
@@ -851,13 +861,58 @@ a.dog-card {
   padding: 20px 24px 24px;
 }
 
+.modal-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
 .modal-body h2 {
   font-family: var(--font-display);
   font-size: 1.2rem;
   font-weight: 400;
   color: var(--text);
-  margin-bottom: 16px;
+  margin-bottom: 0;
   text-transform: uppercase;
+  line-height: 1.1;
+}
+
+.modal-fav-btn {
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-light);
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.modal-fav-btn:hover {
+  background: var(--surface);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.modal-fav-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.modal-fav-btn.active {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.modal-fav-btn.active svg {
+  fill: currentColor;
 }
 
 .modal-details {
@@ -1331,4 +1386,42 @@ a.dog-card {
     max-width: 100%;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   }
+}
+
+/* ── Loading state ─────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+
+.dog-grid.grid-loading .dog-card {
+  pointer-events: none;
+  opacity: 0.45;
+  transition: opacity 0.15s;
+}
+
+.dog-grid.grid-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 80%
+  );
+  background-size: 1200px 100%;
+  animation: shimmer 1.4s infinite linear;
+  pointer-events: none;
+  border-radius: var(--radius);
+}
+
+[data-sort]:disabled,
+[data-shelter]:disabled,
+#prev-btn:disabled,
+#next-btn:disabled,
+.page-num:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
 }

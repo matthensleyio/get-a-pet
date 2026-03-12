@@ -22,6 +22,7 @@ public sealed class Program
                 var connectionString = ctx.Configuration["AzureWebJobsStorage"]
                     ?? ctx.Configuration["STORAGE_CONNECTION_STRING"];
                 services.AddSingleton(_ => new TableServiceClient(connectionString));
+                services.AddMemoryCache();
                 services.AddHttpClient("PetBridge", c => c.Timeout = TimeSpan.FromSeconds(30));
 
                 IReadOnlyList<ShelterConfig> shelters =
