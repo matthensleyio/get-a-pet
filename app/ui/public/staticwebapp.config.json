@@ -4,7 +4,7 @@
   },
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/api/*", "/icon-*", "/badge-*", "/*.js", "/*.css", "/*.json", "/*.png", "/*.svg"]
+    "exclude": ["/api/*", "/icon-*", "/badge-*", "/apple-touch-icon*", "/*.js", "/*.css", "/*.json", "/*.png", "/*.svg", "/assets/*"]
   },
   "mimeTypes": {
     ".json": "application/json",

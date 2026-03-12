@@ -16,7 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This starts both servers in parallel:
 - API: `cd app/api && func start` -> http://localhost:7071
-- Frontend: `npx serve app/src -l 3000` -> http://localhost:3000
+- Frontend: `cd app/ui && npm run dev` -> http://localhost:5173
 
 Prerequisites: Azure Functions Core Tools v4, Azurite (local storage emulator) running, VAPID keys populated in `app/api/local.settings.json`.
 
@@ -24,6 +24,12 @@ Prerequisites: Azure Functions Core Tools v4, Azurite (local storage emulator) r
 
 ```bash
 cd app/api && dotnet build
+```
+
+### Build Frontend
+
+```bash
+cd app/ui && npm run build
 ```
 
 ### Trigger Monitor Manually (local)
@@ -64,7 +70,13 @@ No interfaces; single implementations. Primary constructors on all classes. `Tre
 
 ### Frontend
 
-Vanilla JS PWA (`app/src/`). No build step. `app.js` polls `/api/status`, manages push subscriptions, and caches to IndexedDB for offline. `sw.js` handles push events and `notificationclick`.
+Vite + React + TypeScript PWA (`app/ui/`). Builds to `app/ui/dist/`. Key structure:
+- `app/ui/src/` - React source (components, pages, hooks, context, utils, types)
+- `app/ui/public/` - Static assets (sw.js, manifest.json, icons, staticwebapp.config.json)
+- `app/ui/src/App.css` - Global CSS (no CSS modules)
+- Routes: `/` (home, dog grid + tabs) and `/dogs/:aid/details` (dog detail page)
+- TanStack Query polls `/api/status` every 30s; idb for offline cache
+- `sw.js` handles push events and `notificationclick` (navigates to `/dogs/:aid/details`)
 
 ### Storage Schema
 
@@ -96,6 +108,6 @@ In Azure: these are SWA Application Settings. `AzureWebJobsStorage` is auto-prov
 
 ## Deployment
 
-Azure Static Web Apps. `app/src/staticwebapp.config.json` configures routing, security headers, and `apiRuntime: dotnet-isolated:9.0`. The SWA build pipeline serves the frontend from `app/src/` and the API from `app/api/`.
+Azure Static Web Apps. `app/ui/public/staticwebapp.config.json` configures routing, security headers, and `apiRuntime: dotnet-isolated:9.0`. The SWA build pipeline builds from `app/ui/` (runs `npm install && npm run build`) and deploys `dist/` as the frontend alongside `app/api/` as the Functions API.
 
 The monitor trigger (`POST /api/monitor`) is client-driven—it must be called externally on a schedule (e.g., Azure Logic App or browser-side polling) since there is no timer trigger in the deployed function.

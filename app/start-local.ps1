@@ -21,14 +21,14 @@ $apiJob = Start-Job -ScriptBlock {
 Start-Sleep -Seconds 5
 
 $frontendJob = Start-Job -ScriptBlock {
-    Set-Location "$using:PSScriptRoot/src"
-    npx serve . -l 3000
+    Set-Location "$using:PSScriptRoot/ui"
+    npm run dev
 }
 
 Write-Host ""
 Write-Host "Azurite:  127.0.0.1:10000-10002" -ForegroundColor Green
 Write-Host "API:      http://localhost:7071" -ForegroundColor Green
-Write-Host "Frontend: http://localhost:3000" -ForegroundColor Green
+Write-Host "Frontend: http://localhost:5173" -ForegroundColor Green
 Write-Host ""
 Write-Host "Press Ctrl+C to stop all servers" -ForegroundColor Yellow
 

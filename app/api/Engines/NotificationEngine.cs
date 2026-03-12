@@ -35,7 +35,7 @@ public sealed class NotificationEngine(IConfiguration configuration)
             $"{dog.Name} is available for adoption!",
             body,
             dog.PhotoUrl,
-            dog.ProfileUrl);
+            $"/dogs/{dog.Aid}/details");
     }
 
     public async Task SendAsync(

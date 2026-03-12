@@ -1,5 +1,5 @@
 var CACHE_NAME = "get-a-pet-v3";
-var SHELL_FILES = ["/", "/index.html", "/styles.css", "/app.js", "/manifest.json"];
+var SHELL_FILES = ["/", "/index.html", "/manifest.json"];
 var PHOTO_CACHE = "get-a-pet-photos-v1";
 
 self.addEventListener("install", function (event) {
