@@ -1,16 +1,7 @@
 import type { StatusResponseDto, OfflineResponse, PushSubscriptionRequest } from '../types/api';
-import { SHELTER_IDS } from '../config/constants';
 
-export async function fetchStatus(
-  sort: string,
-  page: number,
-  shelters: string[],
-): Promise<StatusResponseDto | OfflineResponse> {
-  const params = new URLSearchParams({ sort, page: String(page) });
-  if (shelters.length < SHELTER_IDS.length) {
-    params.set('shelters', shelters.join(','));
-  }
-  const res = await fetch(`/api/status?${params}`);
+export async function fetchStatus(): Promise<StatusResponseDto | OfflineResponse> {
+  const res = await fetch('/api/status');
   return res.json() as Promise<StatusResponseDto | OfflineResponse>;
 }
 

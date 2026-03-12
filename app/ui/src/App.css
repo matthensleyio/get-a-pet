@@ -687,6 +687,36 @@ a.dog-card {
   pointer-events: none;
 }
 
+.dog-card-fav {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, transform 0.1s;
+  z-index: 1;
+}
+.dog-card-fav:hover {
+  background: rgba(0, 0, 0, 0.55);
+  transform: scale(1.1);
+}
+.dog-card-fav.active {
+  color: #e05;
+}
+.dog-card-fav svg {
+  width: 16px;
+  height: 16px;
+}
+
 .pagination {
   display: flex;
   align-items: center;

@@ -7,9 +7,11 @@ export const SHELTER_NAMES: Record<string, string> = {
   khs: 'KHS',
 };
 
+export const PAGE_SIZE = 24;
 export const POLL_INTERVAL = 30000;
 export const MONITOR_INTERVAL = 300000;
 
+export const FAVORITES_KEY = 'fav-pets';
 export const SORT_KEY = 'khs-sort';
 export const SHELTER_FILTER_KEY = 'shelter-filter';
 export const NOTIF_SHELTER_KEY = 'notif-shelters';

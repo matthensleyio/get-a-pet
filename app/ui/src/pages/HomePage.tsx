@@ -7,10 +7,9 @@ import EmptyState from '../components/EmptyState';
 import type { AdoptedDogDto } from '../types/api';
 
 export default function HomePage() {
-  const { activeTab, statusQuery } = useAppContext();
+  const { activeTab, visibleDogs, favoriteDogs, statusQuery } = useAppContext();
   const data = statusQuery.data;
 
-  const dogs = data?.dogs ?? [];
   const adopted = data
     ? [...data.recentlyAdopted].sort(
         (a: AdoptedDogDto, b: AdoptedDogDto) =>
@@ -25,15 +24,28 @@ export default function HomePage() {
       {activeTab === 'available' && (
         <div className="tab-panel">
           <FilterBar />
-          {dogs.length > 0 ? (
+          {visibleDogs.length > 0 ? (
             <>
-              <DogGrid dogs={dogs} />
+              <DogGrid dogs={visibleDogs} />
               <Pagination />
             </>
           ) : (
             <EmptyState
               title="No pups available right now"
               subtitle="New dogs arrive often &mdash; check back soon!"
+            />
+          )}
+        </div>
+      )}
+
+      {activeTab === 'favorites' && (
+        <div className="tab-panel">
+          {favoriteDogs.length > 0 ? (
+            <DogGrid dogs={favoriteDogs} />
+          ) : (
+            <EmptyState
+              title="No favorites yet"
+              subtitle="Tap the heart on a dog's card to save them here."
             />
           )}
         </div>

@@ -1,12 +1,10 @@
 import { useAppContext } from '../context/AppContext';
+import { PAGE_SIZE } from '../config/constants';
 
 export default function Pagination() {
-  const { page, setPage, statusQuery } = useAppContext();
-  const data = statusQuery.data;
+  const { page, setPage, totalCount } = useAppContext();
 
-  if (!data) return null;
-
-  const totalPages = Math.ceil(data.totalCount / data.pageSize);
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
   if (totalPages <= 1) return null;
 
   const start = Math.max(1, page - 2);

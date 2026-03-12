@@ -4,14 +4,12 @@ import { saveToDb, loadFromDb } from '../utils/db';
 import { POLL_INTERVAL } from '../config/constants';
 import type { CachedStatusData } from '../types/api';
 
-export function useStatusQuery(sort: string, page: number, shelters: string[]) {
-  const stableShelters = [...shelters].sort();
-
+export function useStatusQuery() {
   return useQuery({
-    queryKey: ['status', sort, page, stableShelters] as const,
+    queryKey: ['status'] as const,
     queryFn: async (): Promise<CachedStatusData | null> => {
       try {
-        const raw = await fetchStatus(sort, page, shelters);
+        const raw = await fetchStatus();
         if ('offline' in raw) {
           const cached = await loadFromDb();
           return cached ? { ...cached, fromCache: true } : null;

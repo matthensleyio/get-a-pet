@@ -49,9 +49,6 @@ export interface AdoptedDogDto {
 
 export interface StatusResponseDto {
   dogs: DogDto[];
-  totalCount: number;
-  page: number;
-  pageSize: number;
   lastChecked: string | null;
   isMonitoringActive: boolean;
   recentlyAdopted: AdoptedDogDto[];

@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchStatus } from '../utils/api';
 import { timeAgo } from '../utils/timeAgo';
-import { SHELTER_IDS, SHELTER_NAMES } from '../config/constants';
+import { SHELTER_NAMES } from '../config/constants';
 import ShareButton from '../components/ShareButton';
 import type { CachedStatusData } from '../types/api';
 import type { DogDto, AdoptedDogDto } from '../types/api';
@@ -34,9 +34,9 @@ export default function DogDetailPage() {
   }
 
   const { data: fallbackData } = useQuery({
-    queryKey: ['status', 'newest', 1, [...SHELTER_IDS].sort()] as const,
+    queryKey: ['status'] as const,
     queryFn: async () => {
-      const raw = await fetchStatus('newest', 1, [...SHELTER_IDS]);
+      const raw = await fetchStatus();
       if ('offline' in raw) return null;
       return raw;
     },
