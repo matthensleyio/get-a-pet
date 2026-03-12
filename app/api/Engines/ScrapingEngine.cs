@@ -66,6 +66,30 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory, IReadOn
         return results.SelectMany(d => d).ToList();
     }
 
+    public async Task<bool> IsStillAvailableAsync(Dog dog, CancellationToken ct)
+    {
+        // Check the shelter's own website first — it's the ground truth.
+        // PetBridge can remove a dog from both their list and detail pages
+        // while the shelter still has it listed as available.
+        if (dog.ProfileUrl is not null)
+        {
+            try
+            {
+                var client = httpClientFactory.CreateClient("PetBridge");
+                var html = await client.GetStringAsync(dog.ProfileUrl, ct);
+                if (BreedRegex.IsMatch(html) || ColorRegex.IsMatch(html) || SizeRegex.IsMatch(html))
+                    return true;
+            }
+            catch (HttpRequestException) { }
+        }
+
+        // Fall back to PetBridge detail page.
+        var detail = await GetDogDetailAsync(dog.Aid, dog.ShelterId, ct);
+        return detail is { } d &&
+               (d.Breed is not null || d.Color is not null || d.Size is not null ||
+                d.Weight is not null || d.AdoptionFee is not null || d.CurrentLocation is not null);
+    }
+
     public async Task<DogDetail?> GetDogDetailAsync(string aid, string shelterId, CancellationToken ct)
     {
         var shelter = shelters.First(s => s.ShelterId == shelterId);
