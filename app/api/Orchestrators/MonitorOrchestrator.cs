@@ -22,6 +22,7 @@ public sealed class MonitorOrchestrator(
     public async Task CheckAsync(CancellationToken ct)
     {
         await adoptedDogRepository.PruneOldAsync(ct);
+        await RescueFalselyAdoptedDogsAsync(ct);
 
         var state = await stateRepository.GetStateAsync(ct);
         var currentDogs = await scrapingEngine.GetAllDogsAsync(ct);
@@ -47,7 +48,7 @@ public sealed class MonitorOrchestrator(
             var removedDogs = await dogRepository.GetByKeysAsync(diff.RemovedAids, ct);
 
             var verifyTasks = removedDogs
-                .Select(d => scrapingEngine.IsStillAvailableAsync(d.Aid, d.ShelterId, ct))
+                .Select(d => scrapingEngine.IsStillAvailableAsync(d, ct))
                 .ToList();
             var stillAvailable = await Task.WhenAll(verifyTasks);
 
@@ -57,7 +58,7 @@ public sealed class MonitorOrchestrator(
             if (falselyRemoved.Count > 0)
             {
                 logger.LogWarning(
-                    "{Count} dog(s) still on PetBridge detail page — not marking adopted: {Names}",
+                    "{Count} dog(s) still available on shelter website — not marking adopted: {Names}",
                     falselyRemoved.Count,
                     string.Join(", ", falselyRemoved.Select(d => d.Name)));
                 dogsToStore.AddRange(falselyRemoved);
@@ -75,6 +76,51 @@ public sealed class MonitorOrchestrator(
         await dogRepository.UpsertDogsAsync(dogsToStore, ct);
         await SaveCurrentStateAsync(dogsToStore, ct);
     }
+
+    // Dogs can be incorrectly marked adopted when PetBridge transiently drops them
+    // from its listing while the shelter still has them available. This step runs
+    // every cycle to detect and restore any such dogs from the AdoptedDogs table.
+    private async Task RescueFalselyAdoptedDogsAsync(CancellationToken ct)
+    {
+        var recentlyAdopted = await adoptedDogRepository.GetRecentAsync(ct);
+        if (recentlyAdopted.Count == 0) return;
+
+        var asDogs = recentlyAdopted.Select(AdoptedToDog).ToList();
+        var verifyTasks = asDogs
+            .Select(d => scrapingEngine.IsStillAvailableAsync(d, ct))
+            .ToList();
+        var stillAvailable = await Task.WhenAll(verifyTasks);
+
+        var toRestore = recentlyAdopted.Where((_, i) => stillAvailable[i]).ToList();
+        if (toRestore.Count == 0) return;
+
+        logger.LogWarning(
+            "{Count} adopted dog(s) found still available — restoring: {Names}",
+            toRestore.Count,
+            string.Join(", ", toRestore.Select(d => d.Name)));
+
+        var dogsToRestore = toRestore.Select(AdoptedToDog).ToList();
+        var keysToRestore = toRestore.Select(DogDiffEngine.CompositeKey).ToList();
+
+        await dogRepository.UpsertDogsAsync(dogsToRestore, ct);
+        await adoptedDogRepository.RemoveAsync(keysToRestore, ct);
+
+        var state = await stateRepository.GetStateAsync(ct);
+        if (state is not null)
+        {
+            var restoredKeys = dogsToRestore.Select(DogDiffEngine.CompositeKey).ToHashSet();
+            var mergedKeys = state.KnownAids.Concat(restoredKeys).Distinct().ToList();
+            var mergedDogMap = state.KnownDogs.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            foreach (var dog in dogsToRestore)
+                mergedDogMap[DogDiffEngine.CompositeKey(dog)] = dog.Name ?? "Unknown";
+            await stateRepository.SaveStateAsync(new SiteState(mergedKeys, mergedDogMap, state.Updated), ct);
+        }
+    }
+
+    private static Dog AdoptedToDog(AdoptedDog d) => new(
+        d.Aid, d.ShelterId, d.Name, d.Age, d.Gender, d.PhotoUrl, d.Breed, d.Color,
+        d.Size, d.Weight, d.AdoptionFee, d.CurrentLocation, d.ProfileUrl,
+        d.FirstSeen, d.IntakeDate, ListingDate: null);
 
     private async Task HandleFirstRunAsync(IReadOnlyList<Dog> dogs, CancellationToken ct)
     {

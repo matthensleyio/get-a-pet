@@ -61,6 +61,20 @@ public sealed class AdoptedDogRepository(TableServiceClient tableServiceClient)
         }
     }
 
+    public async Task RemoveAsync(IReadOnlyList<string> rowKeys, CancellationToken ct)
+    {
+        foreach (var rowKey in rowKeys)
+        {
+            try
+            {
+                await _tableClient.DeleteEntityAsync(PartitionKey, rowKey, cancellationToken: ct);
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404)
+            {
+            }
+        }
+    }
+
     public async Task PruneOldAsync(CancellationToken ct)
     {
         var cutoff = DateTimeOffset.UtcNow.Subtract(MaxAge);
