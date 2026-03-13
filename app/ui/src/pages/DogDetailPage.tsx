@@ -5,6 +5,7 @@ import { fetchStatus } from '../utils/api';
 import { timeAgo } from '../utils/timeAgo';
 import { SHELTER_NAMES } from '../config/constants';
 import ShareButton from '../components/ShareButton';
+import { useAppContext } from '../context/AppContext';
 import type { CachedStatusData } from '../types/api';
 import type { DogDto, AdoptedDogDto } from '../types/api';
 
@@ -14,6 +15,7 @@ export default function DogDetailPage() {
   const { aid } = useParams<{ aid: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { isFavorite, toggleFavorite } = useAppContext();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -140,6 +142,15 @@ export default function DogDetailPage() {
                   View on {SHELTER_NAMES[dog.shelterId] ?? 'Shelter'} Website
                 </a>
               )}
+              <button
+                className={`modal-fav-btn${isFavorite(dog) ? ' active' : ''}`}
+                onClick={() => toggleFavorite(dog)}
+              >
+                <svg viewBox="0 0 24 24" fill={isFavorite(dog) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                {isFavorite(dog) ? 'Remove from Favorites' : 'Add to Favorites'}
+              </button>
               <ShareButton title={dog.name ?? 'Dog'} url={detailUrl} />
             </div>
           </div>
