@@ -13,17 +13,18 @@ interface DogCardProps {
 export default function DogCard({ dog, index, adopted = false }: DogCardProps) {
   const breed = cleanBreed(dog.breed);
   const shelterName = SHELTER_NAMES[dog.shelterId] ?? dog.shelterId;
+  const isAdoptedDog = 'adoptedAt' in dog;
   const isNew =
-    !adopted && Date.now() - new Date(dog.firstSeen).getTime() < 86400000;
+    !isAdoptedDog && Date.now() - new Date(dog.firstSeen).getTime() < 86400000;
 
-  const tags = adopted
+  const tags = (adopted || isAdoptedDog)
     ? [dog.size, dog.weight].filter(Boolean)
     : [shelterName, dog.size, dog.weight].filter(Boolean);
 
   return (
     <Link
       to={`/dogs/${dog.aid}/details`}
-      className="dog-card"
+      className={`dog-card${isAdoptedDog ? ' dog-card--adopted' : ''}`}
       style={{ '--i': Math.min(index, 15) } as React.CSSProperties}
     >
       {dog.photoUrl ? (
@@ -32,8 +33,8 @@ export default function DogCard({ dog, index, adopted = false }: DogCardProps) {
         <img src="" alt="No photo" style={{ background: 'var(--surface)' }} />
       )}
       {isNew && <span className="new-badge">New</span>}
-      {adopted && 'adoptedAt' in dog && (
-        <span className="adopted-badge">Adopted {timeAgo(dog.adoptedAt)}</span>
+      {isAdoptedDog && (
+        <span className="adopted-badge">Adopted {timeAgo((dog as AdoptedDogDto).adoptedAt)}</span>
       )}
       <div className="dog-card-info">
         <h3>{dog.name ?? 'Unknown'}</h3>

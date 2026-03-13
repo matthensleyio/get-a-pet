@@ -90,7 +90,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const favoriteDogs = useMemo<(DogDto | AdoptedDogDto)[]>(() => {
     const all: (DogDto | AdoptedDogDto)[] = [...allDogs, ...allAdopted];
-    return all.filter((d) => favoriteKeys.has(compositeKey(d)));
+    const filtered = all.filter((d) => favoriteKeys.has(compositeKey(d)));
+    return filtered.sort((a, b) => {
+      const aAdopted = 'adoptedAt' in a ? 1 : 0;
+      const bAdopted = 'adoptedAt' in b ? 1 : 0;
+      return aAdopted - bAdopted;
+    });
   }, [allDogs, allAdopted, favoriteKeys]);
 
   return (
