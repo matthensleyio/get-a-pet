@@ -30,7 +30,7 @@ public sealed class OgFunction(DogRepository dogRepository, IReadOnlyList<Shelte
         var photoUrl = dog.PhotoUrl ?? $"{appUrl}/icon-512.png";
 
         var title = WebUtility.HtmlEncode($"Meet {name}");
-        var description = WebUtility.HtmlEncode($"@ {shelterName}");
+        var description = WebUtility.HtmlEncode($"at {shelterName}");
         var encodedImageUrl = WebUtility.HtmlEncode(photoUrl);
         var encodedDetailUrl = WebUtility.HtmlEncode($"{appUrl}{detailPath}");
 
