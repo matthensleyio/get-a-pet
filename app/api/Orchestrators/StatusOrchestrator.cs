@@ -33,4 +33,16 @@ public sealed class StatusOrchestrator(
 
         return new StatusResult(allDogs, state?.Updated, isActive, recentlyAdopted);
     }
+
+    public async Task<(Dog? Dog, AdoptedDog? AdoptedDog)> GetDogAsync(string aid, CancellationToken ct)
+    {
+        var dog = await dogRepository.GetByAidAsync(aid, ct);
+        if (dog is not null)
+        {
+            return (dog, null);
+        }
+
+        var adoptedDog = await adoptedDogRepository.GetByAidAsync(aid, ct);
+        return (null, adoptedDog);
+    }
 }

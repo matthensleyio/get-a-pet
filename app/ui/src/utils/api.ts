@@ -1,8 +1,22 @@
-import type { StatusResponseDto, OfflineResponse, PushSubscriptionRequest } from '../types/api';
+import type {
+  StatusResponseDto,
+  OfflineResponse,
+  PushSubscriptionRequest,
+  DogDto,
+  AdoptedDogDto,
+} from '../types/api';
 
 export async function fetchStatus(): Promise<StatusResponseDto | OfflineResponse> {
   const res = await fetch('/api/status');
   return res.json() as Promise<StatusResponseDto | OfflineResponse>;
+}
+
+export async function fetchDog(
+  aid: string,
+): Promise<DogDto | AdoptedDogDto | OfflineResponse | null> {
+  const res = await fetch(`/api/dogs/${aid}`);
+  if (res.status === 404) return null;
+  return res.json() as Promise<DogDto | AdoptedDogDto | OfflineResponse>;
 }
 
 export interface MonitorResult {

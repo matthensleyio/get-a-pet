@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchStatus } from '../utils/api';
+import { fetchDog } from '../utils/api';
 import { timeAgo } from '../utils/timeAgo';
 import { SHELTER_NAMES } from '../config/constants';
 import ShareButton from '../components/ShareButton';
@@ -35,22 +35,20 @@ export default function DogDetailPage() {
     if (cachedDog) break;
   }
 
-  const { data: fallbackData } = useQuery({
-    queryKey: ['status'] as const,
+  const { data: fetchedDog, isLoading: isFetchingDog } = useQuery({
+    queryKey: ['dog', aid] as const,
     queryFn: async () => {
-      const raw = await fetchStatus();
-      if ('offline' in raw) return null;
+      if (!aid) return null;
+      const raw = await fetchDog(aid);
+      if (!raw || 'offline' in raw) return null;
       return raw;
     },
-    enabled: !cachedDog,
+    enabled: !cachedDog && !!aid,
     staleTime: 60000,
     retry: false,
   });
 
-  const dog: AnyDog | undefined =
-    cachedDog ??
-    fallbackData?.dogs.find((d) => d.aid === aid) ??
-    fallbackData?.recentlyAdopted.find((d) => d.aid === aid);
+  const dog: AnyDog | undefined = cachedDog ?? (fetchedDog as AnyDog | undefined);
 
   const isAdopted = dog && 'adoptedAt' in dog;
   const shelteredDate = dog ? (dog.intakeDate ?? (dog as DogDto).listingDate ?? null) : null;
@@ -79,7 +77,7 @@ export default function DogDetailPage() {
 
   const shareUrl = `${window.location.origin}/api/share/${aid}`;
 
-  if (!dog && !fallbackData) {
+  if (!dog && isFetchingDog) {
     return (
       <main className="container">
         <div className="dog-detail-page">

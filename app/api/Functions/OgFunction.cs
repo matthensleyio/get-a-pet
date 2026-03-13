@@ -4,11 +4,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 
 using Api.DomainModels;
+using Api.Orchestrators;
 using Api.Repositories;
 
 namespace Api.Functions;
 
-public sealed class OgFunction(DogRepository dogRepository, IReadOnlyList<ShelterConfig> shelters)
+public sealed class OgFunction(StatusOrchestrator statusOrchestrator, IReadOnlyList<ShelterConfig> shelters)
 {
     [Function("OgPreview")]
     public async Task<IActionResult> RunAsync(
@@ -16,27 +17,34 @@ public sealed class OgFunction(DogRepository dogRepository, IReadOnlyList<Shelte
         string aid,
         CancellationToken ct)
     {
-        var dogs = await dogRepository.GetAllDogsAsync(ct);
-        var dog = dogs.FirstOrDefault(d => d.Aid == aid);
+        var (dog, adoptedDog) = await statusOrchestrator.GetDogAsync(aid, ct);
+        var anyDog = (object?)dog ?? adoptedDog;
 
-        if (dog is null)
+        if (anyDog is null)
             return new RedirectResult("/");
 
-        var shelterName = shelters.FirstOrDefault(s => s.ShelterId == dog.ShelterId)?.ShelterName ?? dog.ShelterId;
-        var name = dog.Name ?? "A Dog";
-        var appUrl = $"{req.Scheme}://{req.Host}";
-        var encodedAid = Uri.EscapeDataString(aid);
-        var detailPath = $"/dogs/{encodedAid}/details";
-        var photoUrl = dog.PhotoUrl ?? $"{appUrl}/icon-512.png";
+        var dogAid = dog?.Aid ?? adoptedDog!.Aid;
+        var dogShelterId = dog?.ShelterId ?? adoptedDog!.ShelterId;
+        var dogName = dog?.Name ?? adoptedDog!.Name;
+        var dogAge = dog?.Age ?? adoptedDog!.Age;
+        var dogBreed = dog?.Breed ?? adoptedDog!.Breed;
+        var dogPhotoUrl = dog?.PhotoUrl ?? adoptedDog!.PhotoUrl;
 
-        var ageNum = dog.Age?.Split(' ').FirstOrDefault(t => int.TryParse(t, out _));
+        var shelterName = shelters.FirstOrDefault(s => s.ShelterId == dogShelterId)?.ShelterName ?? dogShelterId;
+        var name = dogName ?? "A Dog";
+        var appUrl = $"{req.Scheme}://{req.Host}";
+        var encodedAid = Uri.EscapeDataString(dogAid);
+        var detailPath = $"/dogs/{encodedAid}/details";
+        var photoUrl = dogPhotoUrl ?? $"{appUrl}/icon-512.png";
+
+        var ageNum = dogAge?.Split(' ').FirstOrDefault(t => int.TryParse(t, out _));
         string descriptionText;
-        if (ageNum is not null && dog.Breed is not null)
-            descriptionText = $"They're a {ageNum} year old {dog.Breed} at {shelterName}";
+        if (ageNum is not null && dogBreed is not null)
+            descriptionText = $"They're a {ageNum} year old {dogBreed} at {shelterName}";
         else if (ageNum is not null)
             descriptionText = $"They're {ageNum} years old at {shelterName}";
-        else if (dog.Breed is not null)
-            descriptionText = $"They're a {dog.Breed} at {shelterName}";
+        else if (dogBreed is not null)
+            descriptionText = $"They're a {dogBreed} at {shelterName}";
         else
             descriptionText = $"Available at {shelterName}";
 
@@ -59,7 +67,7 @@ public sealed class OgFunction(DogRepository dogRepository, IReadOnlyList<Shelte
               <meta name="twitter:title" content="{title}">
               <meta name="twitter:description" content="{description}">
               <meta name="twitter:image" content="{encodedImageUrl}">
-              <title>{dog.Name} - Get a Pet</title>
+              <title>{dogName} - Get a Pet</title>
               <meta http-equiv="refresh" content="0; url={detailPath}">
             </head>
             <body>

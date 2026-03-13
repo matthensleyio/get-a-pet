@@ -87,6 +87,18 @@ public sealed class DogRepository(TableServiceClient tableServiceClient, IMemory
         };
     }
 
+    public async Task<Dog?> GetByAidAsync(string aid, CancellationToken ct)
+    {
+        await foreach (var entity in _tableClient.QueryAsync<TableEntity>(
+            filter: $"Aid eq '{aid}'",
+            cancellationToken: ct))
+        {
+            return MapToDog(entity);
+        }
+
+        return null;
+    }
+
     public async Task<IReadOnlyList<Dog>> GetByKeysAsync(IReadOnlyList<string> compositeKeys, CancellationToken ct)
     {
         var tasks = compositeKeys

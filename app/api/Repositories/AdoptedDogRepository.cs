@@ -61,6 +61,24 @@ public sealed class AdoptedDogRepository(TableServiceClient tableServiceClient)
         }
     }
 
+    public async Task<AdoptedDog?> GetByAidAsync(string aid, CancellationToken ct)
+    {
+        var cutoff = DateTimeOffset.UtcNow.Subtract(MaxAge);
+
+        await foreach (var entity in _tableClient.QueryAsync<TableEntity>(
+            filter: $"PartitionKey eq '{PartitionKey}' and Aid eq '{aid}'",
+            cancellationToken: ct))
+        {
+            var adoptedAt = entity.GetDateTimeOffset("AdoptedAt") ?? DateTimeOffset.MinValue;
+            if (adoptedAt >= cutoff)
+            {
+                return MapToAdoptedDog(entity);
+            }
+        }
+
+        return null;
+    }
+
     public async Task PruneOldAsync(CancellationToken ct)
     {
         var cutoff = DateTimeOffset.UtcNow.Subtract(MaxAge);

@@ -109,19 +109,35 @@ self.addEventListener("push", function (event) {
 self.addEventListener("notificationclick", function (event) {
   event.notification.close();
 
-  var url = event.notification.data && event.notification.data.url;
-  if (!url) {
-    url = "/";
+  var targetPath = event.notification.data && event.notification.data.url;
+  if (!targetPath) {
+    targetPath = "/";
   }
+
+  // Ensure absolute URL for comparison
+  var targetUrl = new URL(targetPath, location.origin).href;
 
   event.waitUntil(
     self.clients.matchAll({ type: "window" }).then(function (clients) {
+      // 1. Try to find a window that is already on the target URL
       for (var i = 0; i < clients.length; i++) {
-        if (clients[i].url === url && "focus" in clients[i]) {
+        if (clients[i].url === targetUrl && "focus" in clients[i]) {
           return clients[i].focus();
         }
       }
-      return self.clients.openWindow(url);
+
+      // 2. Try to find any window of the app and navigate it
+      for (var j = 0; j < clients.length; j++) {
+        if ("navigate" in clients[j] && "focus" in clients[j]) {
+          clients[j].focus();
+          return clients[j].navigate(targetUrl);
+        }
+      }
+
+      // 3. Otherwise, open a new window
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
     })
   );
 });
