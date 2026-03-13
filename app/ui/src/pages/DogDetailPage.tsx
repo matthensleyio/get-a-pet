@@ -117,9 +117,18 @@ export default function DogDetailPage() {
           </svg>
           Back
         </Link>
-        <div className="modal">
+        <div className="dog-detail-content">
           <div className="modal-image-wrapper">
             {dog.photoUrl && <img src={dog.photoUrl} alt={dog.name ?? 'Dog'} />}
+            <button
+              className={`dog-detail-fav-overlay${isFavorite(dog) ? ' active' : ''}`}
+              onClick={() => toggleFavorite(dog)}
+              aria-label={isFavorite(dog) ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              <svg viewBox="0 0 24 24" fill={isFavorite(dog) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+            </button>
           </div>
           <div className="modal-body">
             <h2>{dog.name ?? 'Unknown'}</h2>
@@ -142,15 +151,6 @@ export default function DogDetailPage() {
                   View on {SHELTER_NAMES[dog.shelterId] ?? 'Shelter'} Website
                 </a>
               )}
-              <button
-                className={`modal-fav-btn${isFavorite(dog) ? ' active' : ''}`}
-                onClick={() => toggleFavorite(dog)}
-              >
-                <svg viewBox="0 0 24 24" fill={isFavorite(dog) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                </svg>
-                {isFavorite(dog) ? 'Remove from Favorites' : 'Add to Favorites'}
-              </button>
               <ShareButton title={dog.name ?? 'Dog'} url={detailUrl} />
             </div>
           </div>
