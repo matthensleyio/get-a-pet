@@ -2,6 +2,7 @@ using System.Net;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 using Api.Repositories;
 using Api.DomainModels;
@@ -17,7 +18,7 @@ public sealed class ShareFunction(
     [Function("Share")]
     public async Task<IActionResult> RunAsync(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "share/{aid}")] HttpRequest req,
-        string aid,
+        [FromRoute] string aid,
         CancellationToken ct)
     {
         logger.LogInformation("Processing share request for aid: {Aid}", aid);
