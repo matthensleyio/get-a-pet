@@ -77,7 +77,7 @@ export default function DogDetailPage() {
       details.push({ label: 'Adopted', value: timeAgo(dog.adoptedAt) });
   }
 
-  const detailUrl = `${window.location.origin}/dogs/${aid}/details`;
+  const shareUrl = `${window.location.origin}/api/share/${aid}`;
 
   if (!dog && !fallbackData) {
     return (
@@ -151,7 +151,7 @@ export default function DogDetailPage() {
                   View on {SHELTER_NAMES[dog.shelterId] ?? 'Shelter'} Website
                 </a>
               )}
-              <ShareButton title={dog.name ?? 'Dog'} url={detailUrl} />
+              <ShareButton title={dog.name ?? 'Dog'} url={shareUrl} />
             </div>
           </div>
         </div>
