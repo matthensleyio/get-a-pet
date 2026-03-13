@@ -29,8 +29,19 @@ public sealed class OgFunction(DogRepository dogRepository, IReadOnlyList<Shelte
         var detailPath = $"/dogs/{encodedAid}/details";
         var photoUrl = dog.PhotoUrl ?? $"{appUrl}/icon-512.png";
 
-        var title = WebUtility.HtmlEncode($"Meet {name}");
-        var description = WebUtility.HtmlEncode($"at {shelterName}");
+        var ageNum = dog.Age?.Split(' ').FirstOrDefault(t => int.TryParse(t, out _));
+        string descriptionText;
+        if (ageNum is not null && dog.Breed is not null)
+            descriptionText = $"They're a {ageNum} year old {dog.Breed} at {shelterName}";
+        else if (ageNum is not null)
+            descriptionText = $"They're {ageNum} years old at {shelterName}";
+        else if (dog.Breed is not null)
+            descriptionText = $"They're a {dog.Breed} at {shelterName}";
+        else
+            descriptionText = $"Available at {shelterName}";
+
+        var title = WebUtility.HtmlEncode($"Someone thinks you would love to meet {name}");
+        var description = WebUtility.HtmlEncode(descriptionText);
         var encodedImageUrl = WebUtility.HtmlEncode(photoUrl);
         var encodedDetailUrl = WebUtility.HtmlEncode($"{appUrl}{detailPath}");
 
@@ -48,7 +59,7 @@ public sealed class OgFunction(DogRepository dogRepository, IReadOnlyList<Shelte
               <meta name="twitter:title" content="{title}">
               <meta name="twitter:description" content="{description}">
               <meta name="twitter:image" content="{encodedImageUrl}">
-              <title>{title} - Get a Pet</title>
+              <title>{dog.Name} - Get a Pet</title>
               <meta http-equiv="refresh" content="0; url={detailPath}">
             </head>
             <body>
