@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useMemo, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useMemo, useEffect, useCallback, type ReactNode } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useStatusQuery } from '../hooks/useStatusQuery';
 import { useMonitorTrigger } from '../hooks/useMonitorTrigger';
@@ -17,11 +17,15 @@ interface AppContextValue {
   sort: string;
   setSort: (sort: string) => void;
   page: number;
-  setPage: (page: number) => void;
+  setPage: React.Dispatch<React.SetStateAction<number>>;
   activeShelters: string[];
   setActiveShelters: (shelters: string[]) => void;
   statusQuery: UseQueryResult<CachedStatusData | null>;
   visibleDogs: DogDto[];
+  visibleFavoriteDogs: (DogDto | AdoptedDogDto)[];
+  visibleAdoptedDogs: AdoptedDogDto[];
+  scrollPosition: number;
+  setScrollPosition: (pos: number) => void;
   totalCount: number;
   favoriteDogs: (DogDto | AdoptedDogDto)[];
   favoriteKeys: Set<string>;
@@ -39,13 +43,14 @@ interface AppContextValue {
 const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('available');
+  const [activeTab, setActiveTabState] = useState<ActiveTab>('available');
   const { value: sort, setValue: setSortValue } = useLocalStorage(SORT_KEY, 'newest');
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(2);
   const { value: activeShelters, setValue: setActiveSheltersValue } = useLocalStorage<string[]>(
     SHELTER_FILTER_KEY,
     [...SHELTER_IDS],
   );
+  const [scrollPosition, setScrollPosition] = useState(0);
   const [isNotifPanelOpen, setIsNotifPanelOpen] = useState(false);
   const [isNotifSetupOpen, setIsNotifSetupOpen] = useState(false);
 
@@ -54,18 +59,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const push = usePushNotifications();
   const { favoriteKeys, toggleFavorite, isFavorite, pruneToKeys } = useFavorites();
 
-  const setSort = (newSort: string) => {
+  const setActiveTab = useCallback((tab: ActiveTab) => {
+    setActiveTabState(tab);
+    setPage(2);
+    window.scrollTo(0, 0);
+  }, []);
+
+  const setSort = useCallback((newSort: string) => {
     setSortValue(newSort);
-    setPage(1);
-  };
+    setPage(2);
+  }, [setSortValue]);
 
-  const setActiveShelters = (shelters: string[]) => {
+  const setActiveShelters = useCallback((shelters: string[]) => {
     setActiveSheltersValue(shelters);
-    setPage(1);
-  };
+    setPage(2);
+  }, [setActiveSheltersValue]);
 
-  const allDogs = statusQuery.data?.dogs ?? [];
-  const allAdopted = statusQuery.data?.recentlyAdopted ?? [];
+  const allDogs = useMemo(() => statusQuery.data?.dogs ?? [], [statusQuery.data]);
+  const allAdopted = useMemo(() => statusQuery.data?.recentlyAdopted ?? [], [statusQuery.data]);
 
   useEffect(() => {
     if (!statusQuery.data) return;
@@ -74,7 +85,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ...allAdopted.map(compositeKey),
     ]);
     pruneToKeys(validKeys);
-  }, [statusQuery.data]);
+  }, [statusQuery.data, allDogs, allAdopted, pruneToKeys]);
 
   const sortedFiltered = useMemo(
     () => sortAndFilterDogs(allDogs, sort, activeShelters),
@@ -84,7 +95,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const totalCount = sortedFiltered.length;
 
   const visibleDogs = useMemo(
-    () => sortedFiltered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    () => sortedFiltered.slice(0, page * PAGE_SIZE),
     [sortedFiltered, page],
   );
 
@@ -98,36 +109,81 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, [allDogs, allAdopted, favoriteKeys]);
 
-  return (
-    <AppContext.Provider
-      value={{
-        activeTab,
-        setActiveTab,
-        sort,
-        setSort,
-        page,
-        setPage,
-        activeShelters,
-        setActiveShelters,
-        statusQuery,
-        visibleDogs,
-        totalCount,
-        favoriteDogs,
-        favoriteKeys,
-        toggleFavorite,
-        isFavorite,
-        monitorError,
-        forceMonitor,
-        push,
-        isNotifPanelOpen,
-        setIsNotifPanelOpen,
-        isNotifSetupOpen,
-        setIsNotifSetupOpen,
-      }}
-    >
-      {children}
-    </AppContext.Provider>
+  const visibleFavoriteDogs = useMemo(
+    () => favoriteDogs.slice(0, page * PAGE_SIZE),
+    [favoriteDogs, page],
   );
+
+  const sortedAdopted = useMemo(
+    () =>
+      [...allAdopted].sort(
+        (a: AdoptedDogDto, b: AdoptedDogDto) =>
+          new Date(b.adoptedAt).getTime() - new Date(a.adoptedAt).getTime(),
+      ),
+    [allAdopted],
+  );
+
+  const visibleAdoptedDogs = useMemo(
+    () => sortedAdopted.slice(0, page * PAGE_SIZE),
+    [sortedAdopted, page],
+  );
+
+  const value = useMemo(
+    () => ({
+      activeTab,
+      setActiveTab,
+      sort,
+      setSort,
+      page,
+      setPage,
+      activeShelters,
+      setActiveShelters,
+      statusQuery,
+      visibleDogs,
+      visibleFavoriteDogs,
+      visibleAdoptedDogs,
+      scrollPosition,
+      setScrollPosition,
+      totalCount,
+      favoriteDogs,
+      favoriteKeys,
+      toggleFavorite,
+      isFavorite,
+      monitorError,
+      forceMonitor,
+      push,
+      isNotifPanelOpen,
+      setIsNotifPanelOpen,
+      isNotifSetupOpen,
+      setIsNotifSetupOpen,
+    }),
+    [
+      activeTab,
+      setActiveTab,
+      sort,
+      setSort,
+      page,
+      activeShelters,
+      setActiveShelters,
+      statusQuery,
+      visibleDogs,
+      visibleFavoriteDogs,
+      visibleAdoptedDogs,
+      scrollPosition,
+      totalCount,
+      favoriteDogs,
+      favoriteKeys,
+      toggleFavorite,
+      isFavorite,
+      monitorError,
+      forceMonitor,
+      push,
+      isNotifPanelOpen,
+      isNotifSetupOpen,
+    ],
+  );
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
 export function useAppContext(): AppContextValue {

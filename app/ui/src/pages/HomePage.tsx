@@ -1,21 +1,45 @@
+import { useEffect, useRef } from 'react';
 import { useAppContext } from '../context/AppContext';
 import TabBar from '../components/TabBar';
 import FilterBar from '../components/FilterBar';
 import DogGrid from '../components/DogGrid';
-import Pagination from '../components/Pagination';
 import EmptyState from '../components/EmptyState';
-import type { AdoptedDogDto } from '../types/api';
 
 export default function HomePage() {
-  const { activeTab, visibleDogs, favoriteDogs, statusQuery } = useAppContext();
-  const data = statusQuery.data;
+  const {
+    activeTab,
+    visibleDogs,
+    visibleFavoriteDogs,
+    visibleAdoptedDogs,
+    statusQuery,
+    scrollPosition,
+    setScrollPosition,
+  } = useAppContext();
 
-  const adopted = data
-    ? [...data.recentlyAdopted].sort(
-        (a: AdoptedDogDto, b: AdoptedDogDto) =>
-          new Date(b.adoptedAt).getTime() - new Date(a.adoptedAt).getTime(),
-      )
-    : [];
+  const isRestored = useRef(false);
+
+  useEffect(() => {
+    // Restore scroll position only once on mount
+    if (!isRestored.current) {
+      window.scrollTo(0, scrollPosition);
+      isRestored.current = true;
+    }
+
+    let timeoutId: number | null = null;
+    const handleScroll = () => {
+      if (timeoutId) return;
+      timeoutId = window.setTimeout(() => {
+        setScrollPosition(window.scrollY);
+        timeoutId = null;
+      }, 150); // Throttle scroll updates
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [scrollPosition, setScrollPosition]);
 
   return (
     <main className="container">
@@ -37,7 +61,6 @@ export default function HomePage() {
           ) : visibleDogs.length > 0 ? (
             <>
               <DogGrid dogs={visibleDogs} />
-              <Pagination />
             </>
           ) : (
             <EmptyState
@@ -50,8 +73,8 @@ export default function HomePage() {
 
       {activeTab === 'favorites' && (
         <div className="tab-panel">
-          {favoriteDogs.length > 0 ? (
-            <DogGrid dogs={favoriteDogs} />
+          {visibleFavoriteDogs.length > 0 ? (
+            <DogGrid dogs={visibleFavoriteDogs} />
           ) : (
             <EmptyState
               title="No favorites yet"
@@ -63,8 +86,8 @@ export default function HomePage() {
 
       {activeTab === 'adopted' && (
         <div className="tab-panel adopted-panel">
-          {adopted.length > 0 ? (
-            <DogGrid dogs={adopted} adopted />
+          {visibleAdoptedDogs.length > 0 ? (
+            <DogGrid dogs={visibleAdoptedDogs} adopted />
           ) : (
             <EmptyState
               title="No recent adoptions"

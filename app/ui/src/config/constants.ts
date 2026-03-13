@@ -7,7 +7,7 @@ export const SHELTER_NAMES: Record<string, string> = {
   khs: 'KHS',
 };
 
-export const PAGE_SIZE = 24;
+export const PAGE_SIZE = 20;
 export const POLL_INTERVAL = 30000;
 export const MONITOR_INTERVAL = 300000;
 
