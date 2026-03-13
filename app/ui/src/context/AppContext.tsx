@@ -17,7 +17,7 @@ interface AppContextValue {
   sort: string;
   setSort: (sort: string) => void;
   page: number;
-  setPage: (page: number) => void;
+  setPage: React.Dispatch<React.SetStateAction<number>>;
   activeShelters: string[];
   setActiveShelters: (shelters: string[]) => void;
   statusQuery: UseQueryResult<CachedStatusData | null>;
