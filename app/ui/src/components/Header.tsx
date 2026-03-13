@@ -25,8 +25,8 @@ export default function Header() {
     <header className="site-header">
       <div className="header-inner">
         <div className="header-brand">
-          <h1 className="site-title">Get-A-Pet</h1>
-          <p className="header-tagline">Be the first to know when your perfect pet is available.</p>
+          <h1 className="site-title">Get a Pet</h1>
+          <p className="header-tagline">The fastest way from shelter to sofa.</p>
         </div>
         <div className="header-controls">
           <div className="notif-group" ref={groupRef}>

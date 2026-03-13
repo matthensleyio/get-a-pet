@@ -24,6 +24,10 @@
       }
     },
     {
+      "route": "/share/:aid",
+      "rewrite": "/api/share/:aid"
+    },
+    {
       "route": "/api/*",
       "allowedRoles": ["anonymous"]
     }
