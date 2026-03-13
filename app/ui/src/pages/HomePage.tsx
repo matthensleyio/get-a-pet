@@ -24,7 +24,17 @@ export default function HomePage() {
       {activeTab === 'available' && (
         <div className="tab-panel">
           <FilterBar />
-          {visibleDogs.length > 0 ? (
+          {statusQuery.isPending ? (
+            <div className="dog-grid grid-loading">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="dog-card dog-card--skeleton"
+                  style={{ '--i': i } as React.CSSProperties}
+                />
+              ))}
+            </div>
+          ) : visibleDogs.length > 0 ? (
             <>
               <DogGrid dogs={visibleDogs} />
               <Pagination />

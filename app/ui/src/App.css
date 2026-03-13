@@ -1405,6 +1405,16 @@ a.dog-card {
   transition: opacity 0.15s;
 }
 
+.dog-card--skeleton {
+  min-height: 280px;
+  animation: none;
+  cursor: default;
+}
+
+.dog-grid.grid-loading .dog-card--skeleton {
+  opacity: 1;
+}
+
 .dog-grid.grid-loading::after {
   content: '';
   position: absolute;
