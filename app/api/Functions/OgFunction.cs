@@ -27,13 +27,11 @@ public sealed class OgFunction(DogRepository dogRepository, IReadOnlyList<Shelte
         var appUrl = $"{req.Scheme}://{req.Host}";
         var encodedAid = Uri.EscapeDataString(aid);
         var detailPath = $"/dogs/{encodedAid}/details";
-        var imageUrl = dog.PhotoUrl is not null
-            ? $"{appUrl}/api/share/image/{encodedAid}"
-            : $"{appUrl}/icon-512.png";
+        var photoUrl = dog.PhotoUrl ?? $"{appUrl}/icon-512.png";
 
         var title = WebUtility.HtmlEncode($"Meet {name}");
         var description = WebUtility.HtmlEncode($"@ {shelterName}");
-        var encodedImageUrl = WebUtility.HtmlEncode(imageUrl);
+        var encodedImageUrl = WebUtility.HtmlEncode(photoUrl);
         var encodedDetailUrl = WebUtility.HtmlEncode($"{appUrl}{detailPath}");
 
         var html = $"""
@@ -46,7 +44,7 @@ public sealed class OgFunction(DogRepository dogRepository, IReadOnlyList<Shelte
               <meta property="og:title" content="{title}">
               <meta property="og:description" content="{description}">
               <meta property="og:image" content="{encodedImageUrl}">
-              <meta name="twitter:card" content="summary_large_image">
+              <meta name="twitter:card" content="summary">
               <meta name="twitter:title" content="{title}">
               <meta name="twitter:description" content="{description}">
               <meta name="twitter:image" content="{encodedImageUrl}">
