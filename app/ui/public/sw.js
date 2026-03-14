@@ -116,10 +116,12 @@ self.addEventListener("notificationclick", function (event) {
 
   event.waitUntil(
     self.clients.matchAll({ type: "window" }).then(function (clients) {
-      for (var i = 0; i < clients.length; i++) {
-        if (clients[i].url === url && "focus" in clients[i]) {
-          return clients[i].focus();
-        }
+      if (clients.length > 0 && "focus" in clients[0]) {
+        return clients[0].focus().then(function (client) {
+          if ("navigate" in client) {
+            return client.navigate(url);
+          }
+        });
       }
       return self.clients.openWindow(url);
     })
