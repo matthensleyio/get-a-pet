@@ -25,10 +25,16 @@ $frontendJob = Start-Job -ScriptBlock {
     npm run dev
 }
 
+$monitorJob = Start-Job -ScriptBlock {
+    Set-Location "$using:PSScriptRoot/monitor"
+    dotnet run
+}
+
 Write-Host ""
 Write-Host "Azurite:  127.0.0.1:10000-10002" -ForegroundColor Green
 Write-Host "API:      http://localhost:7071" -ForegroundColor Green
 Write-Host "Frontend: http://localhost:5173" -ForegroundColor Green
+Write-Host "Monitor:  running (scrapes every 60s, 05:00-20:00 Central)" -ForegroundColor Green
 Write-Host ""
 Write-Host "Press Ctrl+C to stop all servers" -ForegroundColor Yellow
 
@@ -53,6 +59,12 @@ try {
             Receive-Job $frontendJob
             break
         }
+
+        if ($monitorJob.State -eq 'Failed') {
+            Write-Host "Monitor failed:" -ForegroundColor Red
+            Receive-Job $monitorJob
+            break
+        }
     }
 }
 finally {
@@ -60,8 +72,10 @@ finally {
     Stop-Job $azuriteJob -ErrorAction SilentlyContinue
     Stop-Job $apiJob -ErrorAction SilentlyContinue
     Stop-Job $frontendJob -ErrorAction SilentlyContinue
+    Stop-Job $monitorJob -ErrorAction SilentlyContinue
     Remove-Job $azuriteJob -Force -ErrorAction SilentlyContinue
     Remove-Job $apiJob -Force -ErrorAction SilentlyContinue
     Remove-Job $frontendJob -Force -ErrorAction SilentlyContinue
+    Remove-Job $monitorJob -Force -ErrorAction SilentlyContinue
     Write-Host "Done." -ForegroundColor Green
 }

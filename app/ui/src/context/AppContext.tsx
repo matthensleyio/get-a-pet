@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useMemo, useEffect, useCallback, type ReactNode } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useStatusQuery } from '../hooks/useStatusQuery';
-import { useMonitorTrigger } from '../hooks/useMonitorTrigger';
 import { usePushNotifications, type PushNotificationsResult } from '../hooks/usePushNotifications';
 import { useFavorites, compositeKey, type FavoritesResult } from '../hooks/useFavorites';
 import { SHELTER_IDS, SORT_KEY, SHELTER_FILTER_KEY, PAGE_SIZE } from '../config/constants';
@@ -31,8 +30,6 @@ interface AppContextValue {
   favoriteKeys: Set<string>;
   toggleFavorite: FavoritesResult['toggleFavorite'];
   isFavorite: FavoritesResult['isFavorite'];
-  monitorError: string | null;
-  forceMonitor: () => void;
   push: PushNotificationsResult;
   isNotifPanelOpen: boolean;
   setIsNotifPanelOpen: (open: boolean) => void;
@@ -55,7 +52,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isNotifSetupOpen, setIsNotifSetupOpen] = useState(false);
 
   const statusQuery = useStatusQuery();
-  const { monitorError, forceMonitor } = useMonitorTrigger(statusQuery.refetch);
   const push = usePushNotifications();
   const { favoriteKeys, toggleFavorite, isFavorite, pruneToKeys } = useFavorites();
 
@@ -149,8 +145,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       favoriteKeys,
       toggleFavorite,
       isFavorite,
-      monitorError,
-      forceMonitor,
       push,
       isNotifPanelOpen,
       setIsNotifPanelOpen,
@@ -175,8 +169,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       favoriteKeys,
       toggleFavorite,
       isFavorite,
-      monitorError,
-      forceMonitor,
       push,
       isNotifPanelOpen,
       isNotifSetupOpen,

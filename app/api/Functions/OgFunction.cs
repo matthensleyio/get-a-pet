@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 
-using Api.DomainModels;
-using Api.Repositories;
+using Core.DomainModels;
+using Core.Repositories;
 
 namespace Api.Functions;
 

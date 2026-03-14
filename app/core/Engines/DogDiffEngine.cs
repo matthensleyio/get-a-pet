@@ -1,6 +1,6 @@
-using Api.DomainModels;
+using Core.DomainModels;
 
-namespace Api.Engines;
+namespace Core.Engines;
 
 public sealed class DogDiffEngine
 {

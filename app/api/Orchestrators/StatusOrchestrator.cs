@@ -1,5 +1,5 @@
-using Api.DomainModels;
-using Api.Repositories;
+using Core.DomainModels;
+using Core.Repositories;
 
 namespace Api.Orchestrators;
 

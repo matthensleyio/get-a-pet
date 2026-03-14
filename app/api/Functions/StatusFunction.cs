@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 
-using Api.DomainModels;
+using Core.DomainModels;
 using Api.Dtos;
 using Api.Orchestrators;
 

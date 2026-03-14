@@ -1,8 +1,8 @@
 using System.Text.RegularExpressions;
 
-using Api.DomainModels;
+using Core.DomainModels;
 
-namespace Api.Engines;
+namespace Core.Engines;
 
 public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory, IReadOnlyList<ShelterConfig> shelters)
 {
