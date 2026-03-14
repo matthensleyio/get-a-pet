@@ -9,7 +9,6 @@ export const SHELTER_NAMES: Record<string, string> = {
 
 export const PAGE_SIZE = 20;
 export const POLL_INTERVAL = 30000;
-export const MONITOR_INTERVAL = 300000;
 
 export const FAVORITES_KEY = 'fav-pets';
 export const SORT_KEY = 'khs-sort';

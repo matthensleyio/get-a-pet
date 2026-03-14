@@ -2,10 +2,10 @@ using Azure;
 using Azure.Data.Tables;
 using Microsoft.Extensions.Caching.Memory;
 
-using Api.DomainModels;
-using Api.Engines;
+using Core.DomainModels;
+using Core.Engines;
 
-namespace Api.Repositories;
+namespace Core.Repositories;
 
 public sealed class DogRepository(TableServiceClient tableServiceClient, IMemoryCache cache)
 {
@@ -34,7 +34,6 @@ public sealed class DogRepository(TableServiceClient tableServiceClient, IMemory
 
     public async Task UpsertDogsAsync(IReadOnlyList<Dog> dogs, CancellationToken ct)
     {
-        // Parallel GETs to retrieve existing FirstSeen values
         var existingTasks = dogs
             .Select(dog => _tableClient.GetEntityIfExistsAsync<TableEntity>(
                 "dog", DogDiffEngine.CompositeKey(dog), cancellationToken: ct))
@@ -42,7 +41,6 @@ public sealed class DogRepository(TableServiceClient tableServiceClient, IMemory
 
         var existingResults = await Task.WhenAll(existingTasks);
 
-        // UpsertReplace: one action per dog (no duplicate RowKey issue, one batch call)
         var actions = new List<TableTransactionAction>(dogs.Count);
 
         for (var i = 0; i < dogs.Count; i++)
@@ -57,9 +55,10 @@ public sealed class DogRepository(TableServiceClient tableServiceClient, IMemory
                 TableTransactionActionType.UpsertReplace, BuildEntity(dog, rowKey, firstSeen)));
         }
 
-        // Submit in batches of 100 (Azure Table Storage limit per transaction)
         foreach (var batch in actions.Chunk(100))
+        {
             await _tableClient.SubmitTransactionAsync(batch, ct);
+        }
 
         cache.Remove(DogCacheKey);
     }

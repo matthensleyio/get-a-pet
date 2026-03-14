@@ -1,4 +1,4 @@
-namespace Api.DomainModels;
+namespace Core.DomainModels;
 
 public sealed record StatusResult(
     IReadOnlyList<Dog> Dogs,

@@ -4,9 +4,9 @@ using System.Text;
 using Azure;
 using Azure.Data.Tables;
 
-using Api.DomainModels;
+using Core.DomainModels;
 
-namespace Api.Repositories;
+namespace Core.Repositories;
 
 public sealed class SubscriptionRepository(TableServiceClient tableServiceClient)
 {

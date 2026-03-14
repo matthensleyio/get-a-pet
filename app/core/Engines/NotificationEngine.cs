@@ -4,9 +4,9 @@ using Microsoft.Extensions.Configuration;
 
 using WebPush;
 
-using Api.DomainModels;
+using Core.DomainModels;
 
-namespace Api.Engines;
+namespace Core.Engines;
 
 public sealed class NotificationEngine(IConfiguration configuration)
 {

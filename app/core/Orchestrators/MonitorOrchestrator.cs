@@ -2,12 +2,12 @@ using System.Net;
 
 using Microsoft.Extensions.Logging;
 
-using Api.DomainModels;
-using Api.Engines;
-using Api.Repositories;
+using Core.DomainModels;
+using Core.Engines;
+using Core.Repositories;
 using WebPush;
 
-namespace Api.Orchestrators;
+namespace Core.Orchestrators;
 
 public sealed class MonitorOrchestrator(
     ScrapingEngine scrapingEngine,
@@ -137,6 +137,10 @@ public sealed class MonitorOrchestrator(
         catch (HttpRequestException ex)
         {
             logger.LogWarning("Network error sending push to {Endpoint}: {Message}", sub.Endpoint, ex.Message);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unexpected error sending push to {Endpoint}", sub.Endpoint);
         }
     }
 

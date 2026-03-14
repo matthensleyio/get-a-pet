@@ -1,22 +1,20 @@
 using Azure.Data.Tables;
-using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 using Core.DomainModels;
 using Core.Engines;
+using Core.Orchestrators;
 using Core.Repositories;
-using Api.Orchestrators;
 
-namespace Api;
+namespace Monitor;
 
 public sealed class Program
 {
     public static async Task Main(string[] args)
     {
-        var host = new HostBuilder()
-            .ConfigureFunctionsWebApplication()
+        var host = Host.CreateDefaultBuilder(args)
             .ConfigureServices((ctx, services) =>
             {
                 var connectionString = ctx.Configuration["AzureWebJobsStorage"]
@@ -42,7 +40,9 @@ public sealed class Program
                 services.AddScoped<DogDiffEngine>();
                 services.AddScoped<NotificationEngine>();
 
-                services.AddScoped<StatusOrchestrator>();
+                services.AddScoped<MonitorOrchestrator>();
+
+                services.AddHostedService<MonitorWorker>();
             })
             .Build();
 

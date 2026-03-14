@@ -3,9 +3,9 @@ using System.Text.Json;
 using Azure;
 using Azure.Data.Tables;
 
-using Api.DomainModels;
+using Core.DomainModels;
 
-namespace Api.Repositories;
+namespace Core.Repositories;
 
 public sealed class StateRepository(TableServiceClient tableServiceClient)
 {

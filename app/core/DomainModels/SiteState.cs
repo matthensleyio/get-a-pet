@@ -1,4 +1,4 @@
-namespace Api.DomainModels;
+namespace Core.DomainModels;
 
 public sealed record SiteState(
     IReadOnlyList<string> KnownAids,

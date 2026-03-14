@@ -1,10 +1,10 @@
 using Azure;
 using Azure.Data.Tables;
 
-using Api.DomainModels;
-using Api.Engines;
+using Core.DomainModels;
+using Core.Engines;
 
-namespace Api.Repositories;
+namespace Core.Repositories;
 
 public sealed class AdoptedDogRepository(TableServiceClient tableServiceClient)
 {
