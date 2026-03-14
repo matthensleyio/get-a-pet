@@ -1,0 +1,10 @@
+services:
+  shelter-import:
+    image: ${DOCKER_REGISTRY-}getapet-shelter-import
+    container_name: getapet-shelter-import
+    build:
+      context: ../..
+      dockerfile: app/GetAPet.Shelter.Import/Dockerfile
+    env_file:
+      - .env
+    restart: unless-stopped
