@@ -77,7 +77,7 @@ export default function DogDetailPage() {
       details.push({ label: 'Adopted', value: timeAgo(dog.adoptedAt) });
   }
 
-  const shareUrl = `${window.location.origin}/api/share/${aid}`;
+  const shareUrl = `${window.location.origin}/api/share/${aid}?utm_content=share-link`;
 
   if (!dog && !fallbackData) {
     return (

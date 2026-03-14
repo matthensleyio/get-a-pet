@@ -15,10 +15,11 @@ public sealed class Program
     public static async Task Main(string[] args)
     {
         var host = Host.CreateDefaultBuilder(args)
+            .UseContentRoot(AppContext.BaseDirectory)
             .ConfigureServices((ctx, services) =>
             {
-                var connectionString = ctx.Configuration["AzureWebJobsStorage"]
-                    ?? ctx.Configuration["STORAGE_CONNECTION_STRING"];
+                var connectionString = ctx.Configuration["STORAGE_CONNECTION_STRING"]
+                    ?? ctx.Configuration["AzureWebJobsStorage"];
                 services.AddSingleton(_ => new TableServiceClient(connectionString));
                 services.AddMemoryCache();
                 services.AddHttpClient("PetBridge", c => c.Timeout = TimeSpan.FromSeconds(30));

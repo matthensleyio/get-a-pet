@@ -38,10 +38,6 @@ public sealed class MonitorWorker(IServiceScopeFactory scopeFactory, ILogger<Mon
             await orchestrator.CheckAsync(ct);
             logger.LogInformation("Monitor check completed at {Time:HH:mm} Central", centralNow);
         }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Monitor check failed");
