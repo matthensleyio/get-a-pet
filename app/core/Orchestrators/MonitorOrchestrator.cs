@@ -24,7 +24,9 @@ public sealed class MonitorOrchestrator(
         await adoptedDogRepository.PruneOldAsync(ct);
 
         var state = await stateRepository.GetStateAsync(ct);
-        var currentDogs = await scrapingEngine.GetAllDogsAsync(ct);
+        var currentDogs = (await scrapingEngine.GetAllDogsAsync(ct))
+            .DistinctBy(DogDiffEngine.CompositeKey)
+            .ToList();
 
         if (state is null)
         {
@@ -72,7 +74,9 @@ public sealed class MonitorOrchestrator(
             logger.LogInformation("Found {Count} new dog(s)", newDogs.Count);
         }
 
-        var dogsToFetch = newDogs.Concat(backfillDogs).ToList();
+        var dogsToFetch = newDogs.Concat(backfillDogs)
+            .DistinctBy(DogDiffEngine.CompositeKey)
+            .ToList();
 
         var detailTasks = dogsToFetch
             .Select(d => scrapingEngine.GetDogDetailAsync(d.Aid, d.ShelterId, ct))
@@ -129,6 +133,19 @@ public sealed class MonitorOrchestrator(
         {
             logger.LogWarning("Removing expired subscription: {Endpoint}", sub.Endpoint);
             await subscriptionRepository.RemoveByEndpointAsync(sub.Endpoint, ct);
+        }
+        catch (WebPushException ex) when (ex.StatusCode is HttpStatusCode.BadRequest)
+        {
+            var body = await ex.HttpResponseMessage.Content.ReadAsStringAsync(ct);
+            if (body.Contains("VapidPkHashMismatch"))
+            {
+                logger.LogWarning("Removing subscription with mismatched VAPID key: {Endpoint}", sub.Endpoint);
+                await subscriptionRepository.RemoveByEndpointAsync(sub.Endpoint, ct);
+            }
+            else
+            {
+                logger.LogWarning("Transient push failure for {Endpoint}: {Message}", sub.Endpoint, ex.Message);
+            }
         }
         catch (WebPushException ex)
         {
