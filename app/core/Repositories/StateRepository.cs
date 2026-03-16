@@ -23,11 +23,14 @@ public sealed class StateRepository(TableServiceClient tableServiceClient)
 
             var aids = JsonSerializer.Deserialize<List<string>>(entity.GetString("KnownAidsJson") ?? "[]") ?? [];
             var dogs = JsonSerializer.Deserialize<Dictionary<string, string>>(entity.GetString("KnownDogsJson") ?? "{}") ?? [];
+            var recentlyNotified = JsonSerializer.Deserialize<Dictionary<string, DateTimeOffset>>(
+                entity.GetString("RecentlyNotifiedAidsJson") ?? "{}") ?? [];
 
             return new SiteState(
                 aids,
                 dogs,
-                entity.GetDateTimeOffset("Updated") ?? DateTimeOffset.UtcNow);
+                entity.GetDateTimeOffset("Updated") ?? DateTimeOffset.UtcNow,
+                recentlyNotified);
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
         {
@@ -41,6 +44,7 @@ public sealed class StateRepository(TableServiceClient tableServiceClient)
         {
             ["KnownAidsJson"] = JsonSerializer.Serialize(state.KnownAids),
             ["KnownDogsJson"] = JsonSerializer.Serialize(state.KnownDogs),
+            ["RecentlyNotifiedAidsJson"] = JsonSerializer.Serialize(state.RecentlyNotifiedAids),
             ["Updated"] = state.Updated
         };
 
