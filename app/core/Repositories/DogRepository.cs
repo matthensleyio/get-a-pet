@@ -49,7 +49,7 @@ public sealed class DogRepository(TableServiceClient tableServiceClient, IMemory
             var rowKey = DogDiffEngine.CompositeKey(dog);
             var firstSeen = existingResults[i].HasValue
                 ? existingResults[i].Value!.GetDateTimeOffset("FirstSeen") ?? DateTimeOffset.UtcNow
-                : DateTimeOffset.UtcNow;
+                : dog.FirstSeen != default ? dog.FirstSeen : DateTimeOffset.UtcNow;
 
             actions.Add(new TableTransactionAction(
                 TableTransactionActionType.UpsertReplace, BuildEntity(dog, rowKey, firstSeen)));

@@ -52,12 +52,23 @@ public sealed class MonitorOrchestrator(
                 diff.NewDogs.Count - dogsToNotify.Count);
         }
 
+        // Preserve original FirstSeen for returning dogs so the UI "New" badge doesn't reappear
+        var stamped = currentDogs
+            .Select(d =>
+            {
+                var key = DogDiffEngine.CompositeKey(d);
+                return state.RecentlyNotifiedAids.TryGetValue(key, out var notifiedAt)
+                    ? d with { FirstSeen = notifiedAt }
+                    : d;
+            })
+            .ToList();
+
         var newDogKeys = diff.NewDogs.Select(DogDiffEngine.CompositeKey).ToHashSet();
-        var existingDogs = currentDogs
+        var existingDogs = stamped
             .Where(d => !newDogKeys.Contains(DogDiffEngine.CompositeKey(d)))
             .ToList();
 
-        var dogsToStore = await HandleNewDogsAsync(currentDogs, dogsToNotify, existingDogs, ct);
+        var dogsToStore = await HandleNewDogsAsync(stamped, dogsToNotify, existingDogs, ct);
 
         if (diff.RemovedAids.Count > 0)
         {
