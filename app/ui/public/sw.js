@@ -115,12 +115,10 @@ self.addEventListener("notificationclick", function (event) {
   }
 
   event.waitUntil(
-    self.clients.matchAll({ type: "window" }).then(function (clients) {
-      if (clients.length > 0 && "focus" in clients[0]) {
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (clients) {
+      if (clients.length > 0) {
         return clients[0].focus().then(function (client) {
-          if ("navigate" in client) {
-            return client.navigate(url);
-          }
+          client.postMessage({ type: "NAVIGATE", url: url });
         });
       }
       return self.clients.openWindow(url);
