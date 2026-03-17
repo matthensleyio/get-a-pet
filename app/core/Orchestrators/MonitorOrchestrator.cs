@@ -36,12 +36,41 @@ public sealed class MonitorOrchestrator(
 
         var diff = dogDiffEngine.ComputeDiff(currentDogs, state);
 
+        // Filter out dogs that were already notified within the past 7 days
+        var cutoff = DateTimeOffset.UtcNow.AddDays(-7);
+        var dogsToNotify = diff.NewDogs
+            .Where(d =>
+            {
+                var key = DogDiffEngine.CompositeKey(d);
+                return !state.RecentlyNotifiedAids.TryGetValue(key, out var notifiedAt)
+                       || notifiedAt < cutoff;
+            })
+            .ToList();
+
+        if (diff.NewDogs.Count != dogsToNotify.Count)
+        {
+            logger.LogInformation(
+                "Filtered {Count} recently-notified dog(s) from notifications",
+                diff.NewDogs.Count - dogsToNotify.Count);
+        }
+
+        // Preserve original FirstSeen for returning dogs so the UI "New" badge doesn't reappear
+        var stamped = currentDogs
+            .Select(d =>
+            {
+                var key = DogDiffEngine.CompositeKey(d);
+                return state.RecentlyNotifiedAids.TryGetValue(key, out var notifiedAt)
+                    ? d with { FirstSeen = notifiedAt }
+                    : d;
+            })
+            .ToList();
+
         var newDogKeys = diff.NewDogs.Select(DogDiffEngine.CompositeKey).ToHashSet();
-        var existingDogs = currentDogs
+        var existingDogs = stamped
             .Where(d => !newDogKeys.Contains(DogDiffEngine.CompositeKey(d)))
             .ToList();
 
-        var dogsToStore = await HandleNewDogsAsync(currentDogs, diff.NewDogs, existingDogs, ct);
+        var dogsToStore = await HandleNewDogsAsync(stamped, dogsToNotify, existingDogs, ct);
 
         if (diff.RemovedAids.Count > 0)
         {
@@ -52,7 +81,7 @@ public sealed class MonitorOrchestrator(
         }
 
         await dogRepository.UpsertDogsAsync(dogsToStore, ct);
-        await SaveCurrentStateAsync(dogsToStore, ct);
+        await SaveCurrentStateAsync(dogsToStore, state.RecentlyNotifiedAids, dogsToNotify, ct);
     }
 
     private async Task HandleFirstRunAsync(IReadOnlyList<Dog> dogs, CancellationToken ct)
@@ -60,7 +89,7 @@ public sealed class MonitorOrchestrator(
         logger.LogInformation("First run, capturing initial state with {Count} dog(s)", dogs.Count);
 
         await dogRepository.UpsertDogsAsync(dogs, ct);
-        await SaveCurrentStateAsync(dogs, ct);
+        await SaveCurrentStateAsync(dogs, new Dictionary<string, DateTimeOffset>(), [], ct);
     }
 
     private async Task<IReadOnlyList<Dog>> HandleNewDogsAsync(
@@ -161,11 +190,27 @@ public sealed class MonitorOrchestrator(
         }
     }
 
-    private async Task SaveCurrentStateAsync(IReadOnlyList<Dog> dogs, CancellationToken ct)
+    private async Task SaveCurrentStateAsync(
+        IReadOnlyList<Dog> dogs,
+        IReadOnlyDictionary<string, DateTimeOffset> previousRecentlyNotified,
+        IReadOnlyList<Dog> newlyNotifiedDogs,
+        CancellationToken ct)
     {
+        var cutoff = DateTimeOffset.UtcNow.AddDays(-7);
+        var now = DateTimeOffset.UtcNow;
+
+        var recentlyNotified = previousRecentlyNotified
+            .Where(kv => kv.Value >= cutoff)
+            .ToDictionary(kv => kv.Key, kv => kv.Value);
+
+        foreach (var dog in newlyNotifiedDogs)
+        {
+            recentlyNotified[DogDiffEngine.CompositeKey(dog)] = now;
+        }
+
         var keys = dogs.Select(DogDiffEngine.CompositeKey).ToList();
         var dogMap = dogs.ToDictionary(DogDiffEngine.CompositeKey, d => d.Name ?? "Unknown");
-        var state = new SiteState(keys, dogMap, DateTimeOffset.UtcNow);
+        var state = new SiteState(keys, dogMap, now, recentlyNotified);
 
         await stateRepository.SaveStateAsync(state, ct);
     }
