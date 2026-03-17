@@ -23,6 +23,7 @@ namespace GetAPet.Shelter.Import
                     services.AddSingleton(_ => new TableServiceClient(connectionString));
                     services.AddMemoryCache();
                     services.AddHttpClient("PetBridge", c => c.Timeout = TimeSpan.FromSeconds(30));
+                    services.AddHttpClient("ShelterLuv", c => c.Timeout = TimeSpan.FromSeconds(30));
 
                     IReadOnlyList<ShelterConfig> shelters = new List<ShelterConfig>
                     {
@@ -32,12 +33,19 @@ namespace GetAPet.Shelter.Import
                     };
                     services.AddSingleton(shelters);
 
+                    IReadOnlyList<ShelterLuvConfig> shelterLuvShelters =
+                    [
+                        new ShelterLuvConfig("ptdr", "Pawsitive Tails Dog Rescue", "https://www.pawsitivetailskc.org/wp-admin/admin-ajax.php?action=getAllDogs", "https://www.pawsitivetailskc.org/adopt/dog/?id={0}")
+                    ];
+                    services.AddSingleton(shelterLuvShelters);
+
                     services.AddScoped<StateRepository>();
                     services.AddScoped<DogRepository>();
                     services.AddScoped<AdoptedDogRepository>();
                     services.AddScoped<SubscriptionRepository>();
 
                     services.AddScoped<ScrapingEngine>();
+                    services.AddScoped<ShelterLuvScrapingEngine>();
                     services.AddScoped<DogDiffEngine>();
                     services.AddScoped<NotificationEngine>();
 

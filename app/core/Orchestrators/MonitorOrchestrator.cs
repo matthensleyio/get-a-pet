@@ -11,12 +11,14 @@ namespace Core.Orchestrators;
 
 public sealed class MonitorOrchestrator(
     ScrapingEngine scrapingEngine,
+    ShelterLuvScrapingEngine shelterLuvScrapingEngine,
     DogDiffEngine dogDiffEngine,
     NotificationEngine notificationEngine,
     StateRepository stateRepository,
     DogRepository dogRepository,
     AdoptedDogRepository adoptedDogRepository,
     SubscriptionRepository subscriptionRepository,
+    IReadOnlyList<ShelterLuvConfig> shelterLuvConfigs,
     ILogger<MonitorOrchestrator> logger)
 {
     public async Task CheckAsync(CancellationToken ct)
@@ -24,7 +26,10 @@ public sealed class MonitorOrchestrator(
         await adoptedDogRepository.PruneOldAsync(ct);
 
         var state = await stateRepository.GetStateAsync(ct);
-        var currentDogs = (await scrapingEngine.GetAllDogsAsync(ct))
+        var petBridgeDogs = await scrapingEngine.GetAllDogsAsync(ct);
+        var shelterLuvDogs = await shelterLuvScrapingEngine.GetAllDogsAsync(ct);
+        var currentDogs = petBridgeDogs
+            .Concat(shelterLuvDogs)
             .DistinctBy(DogDiffEngine.CompositeKey)
             .ToList();
 
@@ -36,11 +41,29 @@ public sealed class MonitorOrchestrator(
 
         var diff = dogDiffEngine.ComputeDiff(currentDogs, state);
 
+        var firstTimeShelterIds = currentDogs
+            .Select(d => d.ShelterId)
+            .Distinct()
+            .Where(id => !state.KnownAids.Any(key => key.StartsWith(id + "-", StringComparison.Ordinal)))
+            .ToHashSet();
+
+        if (firstTimeShelterIds.Count > 0)
+        {
+            logger.LogInformation(
+                "Suppressing notifications for first-time shelter(s): {Shelters}",
+                String.Join(", ", firstTimeShelterIds));
+        }
+
         // Filter out dogs that were already notified within the past 7 days
         var cutoff = DateTimeOffset.UtcNow.AddDays(-7);
         var dogsToNotify = diff.NewDogs
             .Where(d =>
             {
+                if (firstTimeShelterIds.Contains(d.ShelterId))
+                {
+                    return false;
+                }
+
                 var key = DogDiffEngine.CompositeKey(d);
                 return !state.RecentlyNotifiedAids.TryGetValue(key, out var notifiedAt)
                        || notifiedAt < cutoff;
@@ -107,8 +130,11 @@ public sealed class MonitorOrchestrator(
             .DistinctBy(DogDiffEngine.CompositeKey)
             .ToList();
 
+        var shelterLuvShelterIds = shelterLuvConfigs.Select(s => s.ShelterId).ToHashSet();
         var detailTasks = dogsToFetch
-            .Select(d => scrapingEngine.GetDogDetailAsync(d.Aid, d.ShelterId, ct))
+            .Select(d => shelterLuvShelterIds.Contains(d.ShelterId)
+                ? Task.FromResult<DogDetail?>(null)
+                : scrapingEngine.GetDogDetailAsync(d.Aid, d.ShelterId, ct))
             .ToList();
 
         var details = await Task.WhenAll(detailTasks);
