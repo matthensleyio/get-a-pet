@@ -1,3 +1,8 @@
+export interface ShelterDto {
+  shelterId: string;
+  shelterName: string;
+}
+
 export interface PushKeysDto {
   p256dh: string;
   auth: string;

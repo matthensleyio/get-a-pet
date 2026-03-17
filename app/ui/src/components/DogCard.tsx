@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { forwardRef } from 'react';
 import { cleanBreed } from '../utils/breed';
 import { timeAgo } from '../utils/timeAgo';
-import { SHELTER_NAMES } from '../config/constants';
+import { useAppContext } from '../context/AppContext';
 import type { DogDto, AdoptedDogDto } from '../types/api';
 
 interface DogCardProps {
@@ -13,8 +13,9 @@ interface DogCardProps {
 
 const DogCard = forwardRef<HTMLAnchorElement, DogCardProps>(
   ({ dog, index, adopted = false }, ref) => {
+    const { shelters } = useAppContext();
     const breed = cleanBreed(dog.breed);
-    const shelterName = SHELTER_NAMES[dog.shelterId] ?? dog.shelterId;
+    const shelterName = shelters.find(s => s.shelterId === dog.shelterId)?.shelterName ?? dog.shelterId;
     const isAdoptedDog = 'adoptedAt' in dog;
     const isNew =
       !isAdoptedDog && Date.now() - new Date(dog.firstSeen).getTime() < 86400000;

@@ -1,11 +1,12 @@
 import { createContext, useContext, useState, useMemo, useEffect, useCallback, type ReactNode } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useStatusQuery } from '../hooks/useStatusQuery';
+import { useSheltersQuery } from '../hooks/useSheltersQuery';
 import { usePushNotifications, type PushNotificationsResult } from '../hooks/usePushNotifications';
 import { useFavorites, compositeKey, type FavoritesResult } from '../hooks/useFavorites';
-import { SHELTER_IDS, SORT_KEY, SHELTER_FILTER_KEY, PAGE_SIZE } from '../config/constants';
+import { SORT_KEY, SHELTER_FILTER_KEY, PAGE_SIZE } from '../config/constants';
 import { sortAndFilterDogs } from '../utils/sortDogs';
-import type { CachedStatusData, DogDto, AdoptedDogDto } from '../types/api';
+import type { CachedStatusData, DogDto, AdoptedDogDto, ShelterDto } from '../types/api';
 import type { UseQueryResult } from '@tanstack/react-query';
 
 export type ActiveTab = 'available' | 'favorites' | 'adopted';
@@ -19,6 +20,7 @@ interface AppContextValue {
   setPage: React.Dispatch<React.SetStateAction<number>>;
   activeShelters: string[];
   setActiveShelters: (shelters: string[]) => void;
+  shelters: ShelterDto[];
   statusQuery: UseQueryResult<CachedStatusData | null>;
   visibleDogs: DogDto[];
   visibleFavoriteDogs: (DogDto | AdoptedDogDto)[];
@@ -45,12 +47,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [page, setPage] = useState(2);
   const { value: activeShelters, setValue: setActiveSheltersValue } = useLocalStorage<string[]>(
     SHELTER_FILTER_KEY,
-    [...SHELTER_IDS],
+    [],
   );
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isNotifPanelOpen, setIsNotifPanelOpen] = useState(false);
   const [isNotifSetupOpen, setIsNotifSetupOpen] = useState(false);
 
+  const shelters = useSheltersQuery();
   const statusQuery = useStatusQuery();
   const push = usePushNotifications();
   const { favoriteKeys, toggleFavorite, isFavorite, pruneToKeys } = useFavorites();
@@ -82,6 +85,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ]);
     pruneToKeys(validKeys);
   }, [statusQuery.data, allDogs, allAdopted, pruneToKeys]);
+
+  useEffect(() => {
+    if (shelters.length === 0) return;
+    const fetchedIds = shelters.map(s => s.shelterId);
+    const missing = fetchedIds.filter(id => !activeShelters.includes(id));
+    if (missing.length > 0) {
+      setActiveSheltersValue([...activeShelters, ...missing]);
+    }
+  }, [shelters]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sortedFiltered = useMemo(
     () => sortAndFilterDogs(allDogs, sort, activeShelters),
@@ -134,6 +146,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setPage,
       activeShelters,
       setActiveShelters,
+      shelters,
       statusQuery,
       visibleDogs,
       visibleFavoriteDogs,
@@ -159,6 +172,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       page,
       activeShelters,
       setActiveShelters,
+      shelters,
       statusQuery,
       visibleDogs,
       visibleFavoriteDogs,

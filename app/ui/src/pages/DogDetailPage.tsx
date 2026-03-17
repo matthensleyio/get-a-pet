@@ -3,7 +3,6 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchStatus } from '../utils/api';
 import { timeAgo } from '../utils/timeAgo';
-import { SHELTER_NAMES } from '../config/constants';
 import ShareButton from '../components/ShareButton';
 import { useAppContext } from '../context/AppContext';
 import type { CachedStatusData } from '../types/api';
@@ -15,7 +14,9 @@ export default function DogDetailPage() {
   const { aid } = useParams<{ aid: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { isFavorite, toggleFavorite } = useAppContext();
+  const { isFavorite, toggleFavorite, shelters } = useAppContext();
+  const shelterName = (shelterId: string) =>
+    shelters.find(s => s.shelterId === shelterId)?.shelterName ?? shelterId;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -57,7 +58,7 @@ export default function DogDetailPage() {
 
   const details: { label: string; value: string }[] = [];
   if (dog) {
-    if (dog.shelterId) details.push({ label: 'Shelter', value: SHELTER_NAMES[dog.shelterId] ?? dog.shelterId });
+    if (dog.shelterId) details.push({ label: 'Shelter', value: shelterName(dog.shelterId) });
     if (dog.gender) details.push({ label: 'Gender', value: dog.gender });
     if (dog.age) details.push({ label: 'Age', value: dog.age });
     if (dog.breed) details.push({ label: 'Breed', value: dog.breed });
@@ -148,7 +149,7 @@ export default function DogDetailPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  View on {SHELTER_NAMES[dog.shelterId] ?? 'Shelter'} Website
+                  View on {shelterName(dog.shelterId)} Website
                 </a>
               )}
               <ShareButton title={dog.name ?? 'Dog'} url={shareUrl} />

@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { SHELTER_IDS, SHELTER_NAMES } from '../config/constants';
 
 export default function NotificationSetupModal() {
-  const { push, activeShelters, setIsNotifSetupOpen } = useAppContext();
+  const { push, activeShelters, shelters, setIsNotifSetupOpen } = useAppContext();
   const [selected, setSelected] = useState<string[]>(
-    activeShelters.length > 0 ? activeShelters : [...SHELTER_IDS],
+    activeShelters.length > 0 ? activeShelters : shelters.map(s => s.shelterId),
   );
 
   const toggleShelter = (id: string) => {
@@ -49,17 +48,17 @@ export default function NotificationSetupModal() {
           <p>Choose which shelters to follow</p>
         </div>
         <div className="notif-setup-shelters">
-          {SHELTER_IDS.map((id) => (
-            <label key={id} className="notif-setup-row">
+          {shelters.map(({ shelterId, shelterName }) => (
+            <label key={shelterId} className="notif-setup-row">
               <input
                 type="checkbox"
                 className="notif-setup-check"
-                value={id}
-                checked={selected.includes(id)}
-                onChange={() => toggleShelter(id)}
+                value={shelterId}
+                checked={selected.includes(shelterId)}
+                onChange={() => toggleShelter(shelterId)}
               />
               <span className="notif-setup-box" />
-              <span>{SHELTER_NAMES[id]}</span>
+              <span>{shelterName}</span>
             </label>
           ))}
         </div>

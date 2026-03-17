@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchVapidKey, subscribePush, unsubscribePush } from '../utils/api';
 import { urlBase64ToUint8Array } from '../utils/urlBase64ToUint8Array';
-import { NOTIF_SHELTER_KEY, SHELTER_IDS } from '../config/constants';
+import { NOTIF_SHELTER_KEY } from '../config/constants';
 
 export interface PushSubData {
   endpoint: string;
@@ -23,9 +23,9 @@ export interface PushNotificationsResult {
 function loadNotifShelters(): string[] {
   try {
     const saved = JSON.parse(localStorage.getItem(NOTIF_SHELTER_KEY) ?? 'null') as unknown;
-    return Array.isArray(saved) ? (saved as string[]) : [...SHELTER_IDS];
+    return Array.isArray(saved) ? (saved as string[]) : [];
   } catch {
-    return [...SHELTER_IDS];
+    return [];
   }
 }
 

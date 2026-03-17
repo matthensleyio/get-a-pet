@@ -1,12 +1,3 @@
-export const SHELTER_IDS = ['gpspca', 'kcpp', 'khs'] as const;
-export type ShelterId = (typeof SHELTER_IDS)[number];
-
-export const SHELTER_NAMES: Record<string, string> = {
-  gpspca: 'Great Plains SPCA',
-  kcpp: 'KC Pet Project',
-  khs: 'KHS',
-};
-
 export const PAGE_SIZE = 20;
 export const POLL_INTERVAL = 30000;
 

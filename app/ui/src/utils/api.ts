@@ -1,4 +1,4 @@
-import type { StatusResponseDto, OfflineResponse, PushSubscriptionRequest } from '../types/api';
+import type { StatusResponseDto, OfflineResponse, PushSubscriptionRequest, ShelterDto } from '../types/api';
 
 export async function fetchStatus(): Promise<StatusResponseDto | OfflineResponse> {
   const res = await fetch('/api/status');
@@ -18,6 +18,12 @@ export async function subscribePush(request: PushSubscriptionRequest): Promise<v
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
   });
+}
+
+export async function fetchShelters(): Promise<ShelterDto[]> {
+  const res = await fetch('/api/shelters');
+  if (!res.ok) return [];
+  return res.json() as Promise<ShelterDto[]>;
 }
 
 export async function unsubscribePush(

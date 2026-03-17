@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { SHELTER_IDS, SHELTER_NAMES } from '../config/constants';
 
 export default function NotificationPanel() {
-  const { push, setIsNotifPanelOpen } = useAppContext();
+  const { push, setIsNotifPanelOpen, shelters } = useAppContext();
   const [confirming, setConfirming] = useState(false);
 
   const handleShelterToggle = (shelterId: string) => {
@@ -31,13 +30,13 @@ export default function NotificationPanel() {
           <div className="notif-shelter-filter">
             <span className="notif-section-title">Notify me about</span>
             <div className="notif-shelter-options">
-              {SHELTER_IDS.map((id) => (
+              {shelters.map(({ shelterId, shelterName }) => (
                 <button
-                  key={id}
-                  className={`notif-shelter-btn${push.notifShelters.includes(id) ? ' active' : ''}`}
-                  onClick={() => handleShelterToggle(id)}
+                  key={shelterId}
+                  className={`notif-shelter-btn${push.notifShelters.includes(shelterId) ? ' active' : ''}`}
+                  onClick={() => handleShelterToggle(shelterId)}
                 >
-                  {SHELTER_NAMES[id]}
+                  {shelterName}
                 </button>
               ))}
             </div>

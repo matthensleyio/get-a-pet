@@ -1,5 +1,4 @@
 import { useAppContext } from '../context/AppContext';
-import { SHELTER_IDS, SHELTER_NAMES } from '../config/constants';
 
 const SORT_OPTIONS = [
   { value: 'age', label: 'Age' },
@@ -8,7 +7,7 @@ const SORT_OPTIONS = [
 ];
 
 export default function FilterBar() {
-  const { sort, setSort, activeShelters, setActiveShelters } = useAppContext();
+  const { sort, setSort, activeShelters, setActiveShelters, shelters } = useAppContext();
 
   const toggleShelter = (id: string) => {
     if (activeShelters.includes(id)) {
@@ -39,13 +38,13 @@ export default function FilterBar() {
       <div className="filter-group">
         <span className="filter-label">Shelter</span>
         <div className="filter-options">
-          {SHELTER_IDS.map((id) => (
+          {shelters.map(({ shelterId, shelterName }) => (
             <button
-              key={id}
-              className={`filter-btn${activeShelters.includes(id) ? ' active' : ''}`}
-              onClick={() => toggleShelter(id)}
+              key={shelterId}
+              className={`filter-btn${activeShelters.includes(shelterId) ? ' active' : ''}`}
+              onClick={() => toggleShelter(shelterId)}
             >
-              {SHELTER_NAMES[id]}
+              {shelterName}
             </button>
           ))}
         </div>

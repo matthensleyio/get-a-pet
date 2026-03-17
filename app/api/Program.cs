@@ -33,6 +33,12 @@ public sealed class Program
                 ];
                 services.AddSingleton(shelters);
 
+                IReadOnlyList<ShelterLuvConfig> shelterLuvShelters =
+                [
+                    new ShelterLuvConfig("ptdr", "Pawsitive Tails Dog Rescue", "https://www.pawsitivetailskc.org/wp-admin/admin-ajax.php?action=getAllDogs", "https://www.pawsitivetailskc.org/adopt/dog/?id={0}")
+                ];
+                services.AddSingleton(shelterLuvShelters);
+
                 services.AddScoped<StateRepository>();
                 services.AddScoped<DogRepository>();
                 services.AddScoped<AdoptedDogRepository>();
