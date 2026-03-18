@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchStatus } from '../utils/api';
@@ -17,6 +17,15 @@ export default function DogDetailPage() {
   const { isFavorite, toggleFavorite, shelters } = useAppContext();
   const shelterName = (shelterId: string) =>
     shelters.find((s) => s.shelterId === shelterId)?.shelterName ?? shelterId;
+
+  const stageRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  const syncImgHeight = () => {
+    if (imgRef.current && stageRef.current) {
+      stageRef.current.style.setProperty('--img-h', `${imgRef.current.getBoundingClientRect().height}px`);
+    }
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -153,9 +162,9 @@ export default function DogDetailPage() {
           </svg>
         </button>
       </div>
-      <div className="detail-parallax-stage">
+      <div className="detail-parallax-stage" ref={stageRef}>
         <div className="detail-hero">
-          {dog.photoUrl && <img src={dog.photoUrl} alt={dog.name ?? 'Dog'} />}
+          {dog.photoUrl && <img ref={imgRef} src={dog.photoUrl} alt={dog.name ?? 'Dog'} onLoad={syncImgHeight} />}
         </div>
       </div>
       <div className="detail-body">
