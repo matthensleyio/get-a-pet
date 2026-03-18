@@ -90,6 +90,18 @@ public sealed class AdoptedDogRepository(TableServiceClient tableServiceClient)
         }
     }
 
+    public async Task<AdoptedDog?> GetByAidAsync(string aid, CancellationToken ct)
+    {
+        await foreach (var entity in _tableClient.QueryAsync<TableEntity>(
+            filter: $"PartitionKey eq '{PartitionKey}' and Aid eq '{aid}'",
+            cancellationToken: ct))
+        {
+            return MapToAdoptedDog(entity);
+        }
+
+        return null;
+    }
+
     private static AdoptedDog MapToAdoptedDog(TableEntity entity)
     {
         return new AdoptedDog(

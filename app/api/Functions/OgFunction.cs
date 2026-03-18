@@ -16,8 +16,7 @@ public sealed class OgFunction(DogRepository dogRepository, IReadOnlyList<Shelte
         string aid,
         CancellationToken ct)
     {
-        var dogs = await dogRepository.GetAllDogsAsync(ct);
-        var dog = dogs.FirstOrDefault(d => d.Aid == aid);
+        var dog = await dogRepository.GetByAidAsync(aid, ct);
 
         if (dog is null)
             return new RedirectResult("/");

@@ -93,7 +93,7 @@ public sealed class MonitorOrchestrator(
             .Where(d => !newDogKeys.Contains(DogDiffEngine.CompositeKey(d)))
             .ToList();
 
-        var dogsToStore = await HandleNewDogsAsync(stamped, dogsToNotify, existingDogs, ct);
+        var (dogsToStore, dogsActuallyNotified) = await HandleNewDogsAsync(stamped, dogsToNotify, existingDogs, ct);
 
         if (diff.RemovedAids.Count > 0)
         {
@@ -104,7 +104,9 @@ public sealed class MonitorOrchestrator(
         }
 
         await dogRepository.UpsertDogsAsync(dogsToStore, ct);
-        await SaveCurrentStateAsync(dogsToStore, state.RecentlyNotifiedAids, dogsToNotify, ct);
+        await SaveCurrentStateAsync(dogsToStore, state.RecentlyNotifiedAids, dogsActuallyNotified, ct);
+
+        await DispatchNotificationsAsync(dogsActuallyNotified, ct);
     }
 
     private async Task HandleFirstRunAsync(IReadOnlyList<Dog> dogs, CancellationToken ct)
@@ -115,7 +117,7 @@ public sealed class MonitorOrchestrator(
         await SaveCurrentStateAsync(dogs, new Dictionary<string, DateTimeOffset>(), [], ct);
     }
 
-    private async Task<IReadOnlyList<Dog>> HandleNewDogsAsync(
+    private async Task<(IReadOnlyList<Dog> AllDogs, IReadOnlyList<Dog> DogsToNotify)> HandleNewDogsAsync(
         IReadOnlyList<Dog> allCurrentDogs,
         IReadOnlyList<Dog> newDogs,
         IReadOnlyList<Dog> backfillDogs,
@@ -152,27 +154,35 @@ public sealed class MonitorOrchestrator(
             } : dog)
             .ToDictionary(DogDiffEngine.CompositeKey);
 
-        if (newDogs.Count > 0)
-        {
-            var subscriptions = await subscriptionRepository.GetAllAsync(ct);
+        var dogsActuallyNotified = newDogs
+            .Select(d => enrichedDogs.TryGetValue(DogDiffEngine.CompositeKey(d), out var e) ? e : d)
+            .ToList();
 
-            foreach (var dog in newDogs.Select(d => enrichedDogs.TryGetValue(DogDiffEngine.CompositeKey(d), out var e) ? e : d))
-            {
-                var payload = notificationEngine.BuildPayload(dog);
-                var relevantSubs = subscriptions
-                    .Where(s => s.ShelterIds.Count == 0 || s.ShelterIds.Contains(dog.ShelterId))
-                    .ToList();
-                var sendTasks = relevantSubs
-                    .Select(sub => SendAndCleanupAsync(payload, sub, ct))
-                    .ToList();
-
-                await Task.WhenAll(sendTasks);
-            }
-        }
-
-        return allCurrentDogs
+        var allEnrichedDogs = allCurrentDogs
             .Select(dog => enrichedDogs.TryGetValue(DogDiffEngine.CompositeKey(dog), out var enriched) ? enriched : dog)
             .ToList();
+
+        return (allEnrichedDogs, dogsActuallyNotified);
+    }
+
+    private async Task DispatchNotificationsAsync(IReadOnlyList<Dog> dogsToNotify, CancellationToken ct)
+    {
+        if (dogsToNotify.Count == 0) return;
+
+        var subscriptions = await subscriptionRepository.GetAllAsync(ct);
+
+        foreach (var dog in dogsToNotify)
+        {
+            var payload = notificationEngine.BuildPayload(dog);
+            var relevantSubs = subscriptions
+                .Where(s => s.ShelterIds.Count == 0 || s.ShelterIds.Contains(dog.ShelterId))
+                .ToList();
+            var sendTasks = relevantSubs
+                .Select(sub => SendAndCleanupAsync(payload, sub, ct))
+                .ToList();
+
+            await Task.WhenAll(sendTasks);
+        }
     }
 
     private async Task SendAndCleanupAsync(
