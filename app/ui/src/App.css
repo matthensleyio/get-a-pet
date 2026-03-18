@@ -13,8 +13,8 @@
 :root {
   --site-header-h: 62px;
   --detail-bar-h: 68px;
-  --hero-h: 90vh;
-  --parallax-dist: 58vh;
+  --hero-h: 65vh;
+  --parallax-dist: 50vh;
   --bg: #FFF8EE;
   --surface: #FFF0DE;
   --primary: #D45B20;
