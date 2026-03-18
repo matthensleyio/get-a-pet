@@ -256,6 +256,13 @@ body.offline #content-wrapper {
   to { opacity: 1; transform: translateY(0); }
 }
 
+.notif-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
 .notif-section-title {
   display: block;
   font-size: 0.65rem;
@@ -1568,7 +1575,7 @@ a.dog-card {
   flex-direction: column;
   gap: 4px;
   overflow-y: auto;
-  max-height: 340px;
+  max-height: 215px;
 }
 
 @media (min-width: 640px) {
@@ -1609,26 +1616,27 @@ a.dog-card {
 .detail-sticky-back {
   display: flex;
   align-items: center;
-  gap: 4px;
-  background: none;
+  gap: 6px;
+  background: var(--primary);
+  color: var(--bg);
   border: none;
-  color: var(--text-muted);
+  border-radius: var(--radius);
+  padding: 6px 14px;
   font-family: var(--font-body);
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: 0.78rem;
+  font-weight: 700;
   cursor: pointer;
-  padding: 0;
   flex-shrink: 0;
-  transition: color 0.15s;
+  transition: background 0.15s;
 }
 
 .detail-sticky-back:hover {
-  color: var(--text);
+  background: var(--primary-dark);
 }
 
 .detail-sticky-back svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
 }
 
 .detail-sticky-name {
@@ -1646,15 +1654,13 @@ a.dog-card {
 
 .detail-hero {
   position: relative;
-  aspect-ratio: 4 / 3;
-  overflow: hidden;
   background: var(--surface);
 }
 
 .detail-hero img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  max-height: 60vh;
+  object-fit: contain;
   display: block;
 }
 
@@ -1747,10 +1753,6 @@ a.dog-card {
 }
 
 @media (min-width: 640px) {
-  .detail-hero {
-    aspect-ratio: 16 / 9;
-  }
-
   .detail-name {
     font-size: 2.2rem;
   }

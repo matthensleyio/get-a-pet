@@ -4,7 +4,6 @@ import { useAppContext } from '../context/AppContext';
 export default function NotificationPanel() {
   const { push, setIsNotifPanelOpen, shelters } = useAppContext();
   const [confirming, setConfirming] = useState(false);
-  const [search, setSearch] = useState('');
 
   const handleShelterToggle = (shelterId: string) => {
     const current = push.notifShelters;
@@ -26,19 +25,32 @@ export default function NotificationPanel() {
 
   return (
     <div className="notif-panel">
+      <div className="notif-panel-header">
+        <span className="notif-section-title">Alert settings</span>
+        <button
+          className="filter-drawer-close"
+          onClick={() => setIsNotifPanelOpen(false)}
+          aria-label="Close"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
       {!confirming ? (
         <div id="notif-panel-main">
           <div className="notif-shelter-filter">
             <span className="notif-section-title">Notify me about</span>
-            <input
-              className="filter-search"
-              type="search"
-              placeholder="Search shelters..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
             <div className="notif-shelter-options">
-              {shelters.filter((s) => s.shelterName.toLowerCase().includes(search.toLowerCase())).map(({ shelterId, shelterName }) => (
+              {shelters.map(({ shelterId, shelterName }) => (
                 <button
                   key={shelterId}
                   className={`notif-shelter-btn${push.notifShelters.includes(shelterId) ? ' active' : ''}`}
