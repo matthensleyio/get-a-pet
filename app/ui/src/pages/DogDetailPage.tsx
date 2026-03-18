@@ -132,11 +132,8 @@ export default function DogDetailPage() {
           </svg>
           Back
         </button>
-      </div>
-      <div className="detail-hero">
-        {dog.photoUrl && <img src={dog.photoUrl} alt={dog.name ?? 'Dog'} />}
         <button
-          className={`dog-detail-fav-overlay${isFavorite(dog) ? ' active' : ''}`}
+          className={`detail-sticky-fav${isFavorite(dog) ? ' active' : ''}`}
           onClick={() => toggleFavorite(dog)}
           aria-label={isFavorite(dog) ? 'Remove from favorites' : 'Add to favorites'}
         >
@@ -151,6 +148,9 @@ export default function DogDetailPage() {
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
         </button>
+      </div>
+      <div className="detail-hero">
+        {dog.photoUrl && <img src={dog.photoUrl} alt={dog.name ?? 'Dog'} />}
       </div>
       <div className="detail-body">
         <h1 className="detail-name">{dog.name ?? 'Unknown'}</h1>

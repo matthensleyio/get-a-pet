@@ -1633,7 +1633,7 @@ a.dog-card {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  width: 100%;
+  flex: 1;
   background: var(--primary);
   color: var(--bg);
   border: none;
@@ -1655,8 +1655,41 @@ a.dog-card {
   height: 16px;
 }
 
+.detail-sticky-fav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text-light);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.detail-sticky-fav:hover {
+  background: var(--surface);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.detail-sticky-fav.active {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.detail-sticky-fav svg {
+  width: 20px;
+  height: 20px;
+}
+
 @media (min-width: 640px) {
   .detail-sticky-back {
+    flex: none;
     width: auto;
     justify-content: flex-start;
     padding: 6px 14px;
