@@ -1540,12 +1540,27 @@ a.dog-card {
   gap: 10px;
 }
 
-.filter-drawer-section-title {
-  font-size: 0.65rem;
-  font-weight: 700;
+.filter-section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.filter-section-chevron {
+  width: 16px;
+  height: 16px;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.filter-section-chevron.open {
+  transform: rotate(180deg);
 }
 
 .filter-search {
@@ -1616,17 +1631,18 @@ a.dog-card {
 .detail-sticky-back {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  width: 100%;
   background: var(--primary);
   color: var(--bg);
   border: none;
   border-radius: var(--radius);
-  padding: 6px 14px;
+  padding: 10px 14px;
   font-family: var(--font-body);
-  font-size: 0.78rem;
+  font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
-  flex-shrink: 0;
   transition: background 0.15s;
 }
 
@@ -1635,22 +1651,19 @@ a.dog-card {
 }
 
 .detail-sticky-back svg {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
 }
 
-.detail-sticky-name {
-  flex: 1;
-  font-family: var(--font-display);
-  font-size: 0.82rem;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+@media (min-width: 640px) {
+  .detail-sticky-back {
+    width: auto;
+    justify-content: flex-start;
+    padding: 6px 14px;
+    font-size: 0.78rem;
+  }
 }
+
 
 .detail-hero {
   position: relative;
