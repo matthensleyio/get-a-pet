@@ -23,7 +23,9 @@ export default function DogDetailPage() {
 
   const syncImgHeight = () => {
     if (imgRef.current && stageRef.current) {
-      stageRef.current.style.setProperty('--img-h', `${imgRef.current.getBoundingClientRect().height}px`);
+      const h = imgRef.current.getBoundingClientRect().height;
+      stageRef.current.style.setProperty('--img-h', `${h}px`);
+      stageRef.current.parentElement?.style.setProperty('--img-h', `${h}px`);
     }
   };
 
