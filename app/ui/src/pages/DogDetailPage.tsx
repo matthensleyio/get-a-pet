@@ -149,8 +149,10 @@ export default function DogDetailPage() {
           </svg>
         </button>
       </div>
-      <div className="detail-hero">
-        {dog.photoUrl && <img src={dog.photoUrl} alt={dog.name ?? 'Dog'} />}
+      <div className="detail-parallax-stage">
+        <div className="detail-hero">
+          {dog.photoUrl && <img src={dog.photoUrl} alt={dog.name ?? 'Dog'} />}
+        </div>
       </div>
       <div className="detail-body">
         <h1 className="detail-name">{dog.name ?? 'Unknown'}</h1>

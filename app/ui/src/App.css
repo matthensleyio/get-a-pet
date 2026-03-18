@@ -13,6 +13,8 @@
 :root {
   --site-header-h: 62px;
   --detail-bar-h: 68px;
+  --hero-h: 50vh;
+  --parallax-dist: 15vh;
   --bg: #FFF8EE;
   --surface: #FFF0DE;
   --primary: #D45B20;
@@ -1719,18 +1721,28 @@ a.dog-card {
 }
 
 @media (max-width: 639px) {
+  .detail-parallax-stage {
+    height: calc(var(--hero-h) + var(--parallax-dist) + 4px);
+  }
+
   .detail-hero {
     position: sticky;
     top: calc(var(--site-header-h) + var(--detail-bar-h));
     z-index: 1;
+    height: var(--hero-h);
   }
 
-  .detail-hero ~ .detail-body {
+  .detail-hero img {
+    height: 100%;
+    max-height: none;
+  }
+
+  .detail-parallax-stage ~ .detail-body {
     position: relative;
     z-index: 2;
     background: var(--bg);
     border-radius: 24px 24px 0 0;
-    margin: -28px 0 0;
+    margin-top: calc(-1 * (var(--hero-h) + 4px));
     padding: 28px 20px 80px;
     max-width: none;
     min-height: calc(100vh - var(--site-header-h) - var(--detail-bar-h));
