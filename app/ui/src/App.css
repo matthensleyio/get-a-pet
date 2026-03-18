@@ -13,7 +13,6 @@
 :root {
   --site-header-h: 62px;
   --detail-bar-h: 68px;
-  --parallax-travel: 20vh;
   --bg: #FFF8EE;
   --surface: #FFF0DE;
   --primary: #D45B20;
@@ -1722,7 +1721,7 @@ a.dog-card {
 
 @media (max-width: 639px) {
   .detail-parallax-stage {
-    height: calc(var(--img-h, 60vh) + var(--parallax-travel) + 4px);
+    height: calc(2 * var(--img-h, 60vh) + 4px);
   }
 
   .detail-hero {
