@@ -4,6 +4,7 @@ import { useAppContext } from '../context/AppContext';
 export default function NotificationPanel() {
   const { push, setIsNotifPanelOpen, shelters } = useAppContext();
   const [confirming, setConfirming] = useState(false);
+  const [search, setSearch] = useState('');
 
   const handleShelterToggle = (shelterId: string) => {
     const current = push.notifShelters;
@@ -29,8 +30,15 @@ export default function NotificationPanel() {
         <div id="notif-panel-main">
           <div className="notif-shelter-filter">
             <span className="notif-section-title">Notify me about</span>
+            <input
+              className="filter-search"
+              type="search"
+              placeholder="Search shelters..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
             <div className="notif-shelter-options">
-              {shelters.map(({ shelterId, shelterName }) => (
+              {shelters.filter((s) => s.shelterName.toLowerCase().includes(search.toLowerCase())).map(({ shelterId, shelterName }) => (
                 <button
                   key={shelterId}
                   className={`notif-shelter-btn${push.notifShelters.includes(shelterId) ? ' active' : ''}`}
