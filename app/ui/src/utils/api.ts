@@ -1,4 +1,4 @@
-import type { StatusResponseDto, OfflineResponse, PushSubscriptionRequest, ShelterDto } from '../types/api';
+import type { StatusResponseDto, OfflineResponse, PushSubscriptionRequest, ShelterDto, DogDto, AdoptedDogDto } from '../types/api';
 
 export async function fetchStatus(): Promise<StatusResponseDto | OfflineResponse> {
   const res = await fetch('/api/status');
