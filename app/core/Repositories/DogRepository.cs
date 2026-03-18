@@ -63,18 +63,6 @@ public sealed class DogRepository(TableServiceClient tableServiceClient, IMemory
         cache.Remove(DogCacheKey);
     }
 
-    public async Task<Dog?> GetByAidAsync(string aid, CancellationToken ct)
-    {
-        await foreach (var entity in _tableClient.QueryAsync<TableEntity>(
-            filter: $"Aid eq '{aid}'",
-            cancellationToken: ct))
-        {
-            return MapToDog(entity);
-        }
-
-        return null;
-    }
-
     private static TableEntity BuildEntity(Dog dog, string rowKey, DateTimeOffset firstSeen)
     {
         return new TableEntity("dog", rowKey)

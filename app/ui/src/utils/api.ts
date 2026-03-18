@@ -5,12 +5,6 @@ export async function fetchStatus(): Promise<StatusResponseDto | OfflineResponse
   return res.json() as Promise<StatusResponseDto | OfflineResponse>;
 }
 
-export async function fetchDog(aid: string): Promise<DogDto | AdoptedDogDto | null> {
-  const res = await fetch(`/api/dogs/${aid}`);
-  if (!res.ok) return null;
-  return res.json() as Promise<DogDto | AdoptedDogDto>;
-}
-
 export async function fetchVapidKey(): Promise<string> {
   const res = await fetch('/api/vapid-public-key');
   if (!res.ok) throw new Error(`Failed to fetch VAPID key: ${res.status}`);
