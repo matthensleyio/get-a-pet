@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useCallback } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchStatus } from '../utils/api';
 import { timeAgo } from '../utils/timeAgo';
@@ -13,6 +13,7 @@ type AnyDog = DogDto | AdoptedDogDto;
 export default function DogDetailPage() {
   const { aid } = useParams<{ aid: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { isFavorite, toggleFavorite, shelters } = useAppContext();
   const shelterName = (shelterId: string) =>
@@ -33,13 +34,21 @@ export default function DogDetailPage() {
     window.scrollTo(0, 0);
   }, [aid]);
 
+  const handleBack = useCallback(() => {
+    if (location.key === 'default') {
+      navigate('/');
+    } else {
+      navigate(-1);
+    }
+  }, [location.key, navigate]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') navigate(-1);
+      if (e.key === 'Escape') handleBack();
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [navigate]);
+  }, [handleBack]);
 
   const allCached = queryClient.getQueriesData<CachedStatusData>({ queryKey: ['status'] });
   let cachedDog: AnyDog | undefined;
@@ -107,7 +116,7 @@ export default function DogDetailPage() {
     return (
       <div className="detail-page">
         <div className="detail-sticky-bar">
-          <button className="detail-sticky-back" onClick={() => navigate(-1)}>
+          <button className="detail-sticky-back" onClick={handleBack}>
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -134,7 +143,7 @@ export default function DogDetailPage() {
   return (
     <div className="detail-page">
       <div className="detail-sticky-bar">
-        <button className="detail-sticky-back" onClick={() => navigate(-1)}>
+        <button className="detail-sticky-back" onClick={handleBack}>
           <svg
             viewBox="0 0 24 24"
             fill="none"
