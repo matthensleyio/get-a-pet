@@ -9,6 +9,7 @@ interface FilterDrawerProps {
 export default function FilterDrawer({ open, onClose }: FilterDrawerProps) {
   const { shelters, activeShelters, setActiveShelters } = useAppContext();
   const [search, setSearch] = useState('');
+  const [sheltersOpen, setSheltersOpen] = useState(true);
 
   if (!open) return null;
 
@@ -58,36 +59,56 @@ export default function FilterDrawer({ open, onClose }: FilterDrawerProps) {
           </div>
         </div>
         <div className="filter-drawer-body">
-          <span className="filter-drawer-section-title">Shelters</span>
-          <input
-            className="filter-search"
-            type="search"
-            placeholder="Search shelters..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <div className="filter-drawer-shortcuts">
-            <button
-              className="filter-drawer-reset"
-              onClick={() => setActiveShelters(shelters.map((s) => s.shelterId))}
+          <button
+            className="filter-section-toggle"
+            onClick={() => setSheltersOpen(!sheltersOpen)}
+          >
+            <span className="notif-section-title">Shelters</span>
+            <svg
+              className={`filter-section-chevron${sheltersOpen ? ' open' : ''}`}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              Select All
-            </button>
-            <button className="filter-drawer-reset" onClick={() => setActiveShelters([])}>
-              Clear All
-            </button>
-          </div>
-          <div className="filter-shelter-list">
-            {filtered.map(({ shelterId, shelterName }) => (
-              <button
-                key={shelterId}
-                className={`notif-shelter-btn${activeShelters.includes(shelterId) ? ' active' : ''}`}
-                onClick={() => handleToggle(shelterId)}
-              >
-                {shelterName}
-              </button>
-            ))}
-          </div>
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          {sheltersOpen && (
+            <>
+              <input
+                className="filter-search"
+                type="search"
+                placeholder="Search shelters..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <div className="filter-drawer-shortcuts">
+                <button
+                  className="filter-drawer-reset"
+                  onClick={() => setActiveShelters(shelters.map((s) => s.shelterId))}
+                >
+                  Select All
+                </button>
+                <button className="filter-drawer-reset" onClick={() => setActiveShelters([])}>
+                  Clear All
+                </button>
+              </div>
+              <div className="notif-shelter-options">
+                {filtered.map(({ shelterId, shelterName }) => (
+                  <button
+                    key={shelterId}
+                    className={`notif-shelter-btn${activeShelters.includes(shelterId) ? ' active' : ''}`}
+                    onClick={() => handleToggle(shelterId)}
+                  >
+                    {shelterName}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </>

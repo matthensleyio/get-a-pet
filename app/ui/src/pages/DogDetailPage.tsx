@@ -132,8 +132,6 @@ export default function DogDetailPage() {
           </svg>
           Back
         </button>
-        <span className="detail-sticky-name">{dog.name ?? 'Unknown'}</span>
-        <ShareButton title={dog.name ?? 'Dog'} url={shareUrl} iconOnly />
       </div>
       <div className="detail-hero">
         {dog.photoUrl && <img src={dog.photoUrl} alt={dog.name ?? 'Dog'} />}
