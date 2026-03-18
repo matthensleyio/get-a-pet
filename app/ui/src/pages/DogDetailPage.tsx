@@ -19,6 +19,10 @@ export default function DogDetailPage() {
     shelters.find((s) => s.shelterId === shelterId)?.shelterName ?? shelterId;
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [aid]);
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') navigate(-1);
     };
