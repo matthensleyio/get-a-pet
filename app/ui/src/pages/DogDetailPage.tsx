@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchStatus } from '../utils/api';
+import { fetchStatus, fetchDog } from '../utils/api';
 import { timeAgo } from '../utils/timeAgo';
 import ShareButton from '../components/ShareButton';
 import { useAppContext } from '../context/AppContext';
@@ -60,7 +60,7 @@ export default function DogDetailPage() {
     if (cachedDog) break;
   }
 
-  const { data: fallbackData } = useQuery({
+  const { data: fallbackData, isLoading: isFallbackLoading } = useQuery({
     queryKey: ['status'] as const,
     queryFn: async () => {
       const raw = await fetchStatus();
@@ -72,10 +72,19 @@ export default function DogDetailPage() {
     retry: false,
   });
 
+  const { data: directDog, isLoading: isDirectLoading } = useQuery({
+    queryKey: ['dog', aid],
+    queryFn: () => fetchDog(aid!),
+    enabled: !!aid && !cachedDog && !!fallbackData && !fallbackData.dogs.find(d => d.aid === aid) && !fallbackData.recentlyAdopted.find(d => d.aid === aid),
+    staleTime: 0,
+    retry: 1,
+  });
+
   const dog: AnyDog | undefined =
     cachedDog ??
     fallbackData?.dogs.find((d) => d.aid === aid) ??
-    fallbackData?.recentlyAdopted.find((d) => d.aid === aid);
+    fallbackData?.recentlyAdopted.find((d) => d.aid === aid) ??
+    (directDog || undefined);
 
   const isAdopted = dog && 'adoptedAt' in dog;
   const shelteredDate = dog ? (dog.intakeDate ?? (dog as DogDto).listingDate ?? null) : null;
@@ -104,7 +113,7 @@ export default function DogDetailPage() {
 
   const shareUrl = `${window.location.origin}/api/share/${aid}?utm_content=share-link`;
 
-  if (!dog && !fallbackData) {
+  if (!dog && (isFallbackLoading || isDirectLoading)) {
     return (
       <div className="detail-page">
         <div className="dog-detail-loading">Loading&hellip;</div>
