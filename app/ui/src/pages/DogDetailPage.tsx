@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchStatus } from '../utils/api';
 import { timeAgo } from '../utils/timeAgo';
@@ -16,7 +16,7 @@ export default function DogDetailPage() {
   const queryClient = useQueryClient();
   const { isFavorite, toggleFavorite, shelters } = useAppContext();
   const shelterName = (shelterId: string) =>
-    shelters.find(s => s.shelterId === shelterId)?.shelterName ?? shelterId;
+    shelters.find((s) => s.shelterId === shelterId)?.shelterName ?? shelterId;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -82,81 +82,103 @@ export default function DogDetailPage() {
 
   if (!dog && !fallbackData) {
     return (
-      <main className="container">
-        <div className="dog-detail-page">
-          <div className="dog-detail-loading">Loading&hellip;</div>
-        </div>
-      </main>
+      <div className="detail-page">
+        <div className="dog-detail-loading">Loading&hellip;</div>
+      </div>
     );
   }
 
   if (!dog) {
     return (
-      <main className="container">
-        <div className="dog-detail-page">
-          <Link to="/" className="dog-detail-back">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <div className="detail-page">
+        <div className="detail-sticky-bar">
+          <button className="detail-sticky-back" onClick={() => navigate(-1)}>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <polyline points="15 18 9 12 15 6" />
             </svg>
             Back
-          </Link>
+          </button>
+        </div>
+        <div className="detail-body">
           <div className="empty-state">
             <p className="empty-title">Dog not found</p>
             <p className="empty-sub">This dog may have been adopted or is no longer available.</p>
           </div>
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="container">
-      <div className="dog-detail-page">
-        <Link to="/" className="dog-detail-back">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <div className="detail-page">
+      <div className="detail-sticky-bar">
+        <button className="detail-sticky-back" onClick={() => navigate(-1)}>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="15 18 9 12 15 6" />
           </svg>
           Back
-        </Link>
-        <div className="dog-detail-content">
-          <div className="modal-image-wrapper">
-            {dog.photoUrl && <img src={dog.photoUrl} alt={dog.name ?? 'Dog'} />}
-            <button
-              className={`dog-detail-fav-overlay${isFavorite(dog) ? ' active' : ''}`}
-              onClick={() => toggleFavorite(dog)}
-              aria-label={isFavorite(dog) ? 'Remove from favorites' : 'Add to favorites'}
+        </button>
+        <span className="detail-sticky-name">{dog.name ?? 'Unknown'}</span>
+        <ShareButton title={dog.name ?? 'Dog'} url={shareUrl} iconOnly />
+      </div>
+      <div className="detail-hero">
+        {dog.photoUrl && <img src={dog.photoUrl} alt={dog.name ?? 'Dog'} />}
+        <button
+          className={`dog-detail-fav-overlay${isFavorite(dog) ? ' active' : ''}`}
+          onClick={() => toggleFavorite(dog)}
+          aria-label={isFavorite(dog) ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill={isFavorite(dog) ? 'currentColor' : 'none'}
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+          </svg>
+        </button>
+      </div>
+      <div className="detail-body">
+        <h1 className="detail-name">{dog.name ?? 'Unknown'}</h1>
+        {isAdopted && <div className="detail-adopted-pill">Adopted</div>}
+        <div className="detail-rows">
+          {details.map(({ label, value }) => (
+            <div key={label} className="detail-row">
+              <span className="detail-label">{label}</span>
+              <span>{value}</span>
+            </div>
+          ))}
+        </div>
+        <div className="detail-actions">
+          {dog.profileUrl && (
+            <a
+              className="detail-cta-link"
+              href={dog.profileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              <svg viewBox="0 0 24 24" fill={isFavorite(dog) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-              </svg>
-            </button>
-          </div>
-          <div className="modal-body">
-            <h2>{dog.name ?? 'Unknown'}</h2>
-            <div className="modal-details">
-              {details.map(({ label, value }) => (
-                <div key={label} className="modal-detail">
-                  <span className="label">{label}</span>
-                  <span>{value}</span>
-                </div>
-              ))}
-            </div>
-            <div className="dog-detail-actions">
-              {dog.profileUrl && (
-                <a
-                  className="modal-link"
-                  href={dog.profileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  View on {shelterName(dog.shelterId)} Website
-                </a>
-              )}
-              <ShareButton title={dog.name ?? 'Dog'} url={shareUrl} />
-            </div>
-          </div>
+              View on {shelterName(dog.shelterId)} Website
+            </a>
+          )}
+          <ShareButton title={dog.name ?? 'Dog'} url={shareUrl} />
         </div>
       </div>
-    </main>
+    </div>
   );
 }
