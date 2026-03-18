@@ -11,6 +11,8 @@
 }
 
 :root {
+  --site-header-h: 62px;
+  --detail-bar-h: 68px;
   --bg: #FFF8EE;
   --surface: #FFF0DE;
   --primary: #D45B20;
@@ -1618,7 +1620,7 @@ a.dog-card {
 
 .detail-sticky-bar {
   position: sticky;
-  top: 0;
+  top: var(--site-header-h);
   z-index: 40;
   background: var(--card);
   border-bottom: 1.5px solid var(--border);
@@ -1713,7 +1715,26 @@ a.dog-card {
 .detail-body {
   max-width: 680px;
   margin: 0 auto;
-  padding: 24px 20px;
+  padding: 24px 20px 80px;
+}
+
+@media (max-width: 639px) {
+  .detail-hero {
+    position: sticky;
+    top: calc(var(--site-header-h) + var(--detail-bar-h));
+    z-index: 1;
+  }
+
+  .detail-hero ~ .detail-body {
+    position: relative;
+    z-index: 2;
+    background: var(--bg);
+    border-radius: 24px 24px 0 0;
+    margin: -28px 0 0;
+    padding: 28px 20px 80px;
+    max-width: none;
+    min-height: calc(100vh - var(--site-header-h) - var(--detail-bar-h));
+  }
 }
 
 .detail-name {
