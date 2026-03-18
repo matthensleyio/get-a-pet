@@ -13,6 +13,7 @@ type AnyDog = DogDto | AdoptedDogDto;
 export default function DogDetailPage() {
   const { aid } = useParams<{ aid: string }>();
   const navigate = useNavigate();
+  const goBack = () => (window.history.state?.idx > 0 ? navigate(-1) : navigate('/'));
   const queryClient = useQueryClient();
   const { isFavorite, toggleFavorite, shelters } = useAppContext();
   const shelterName = (shelterId: string) =>
@@ -35,11 +36,11 @@ export default function DogDetailPage() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') navigate(-1);
+      if (e.key === 'Escape') goBack();
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [navigate]);
+  }, [goBack]);
 
   const allCached = queryClient.getQueriesData<CachedStatusData>({ queryKey: ['status'] });
   let cachedDog: AnyDog | undefined;
@@ -107,7 +108,7 @@ export default function DogDetailPage() {
     return (
       <div className="detail-page">
         <div className="detail-sticky-bar">
-          <button className="detail-sticky-back" onClick={() => navigate(-1)}>
+          <button className="detail-sticky-back" onClick={goBack}>
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -134,7 +135,7 @@ export default function DogDetailPage() {
   return (
     <div className="detail-page">
       <div className="detail-sticky-bar">
-        <button className="detail-sticky-back" onClick={() => navigate(-1)}>
+        <button className="detail-sticky-back" onClick={goBack}>
           <svg
             viewBox="0 0 24 24"
             fill="none"
