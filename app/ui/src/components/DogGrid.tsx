@@ -6,10 +6,9 @@ import type { DogDto, AdoptedDogDto } from '../types/api';
 
 interface DogGridProps {
   dogs: (DogDto | AdoptedDogDto)[];
-  adopted?: boolean;
 }
 
-export default function DogGrid({ dogs, adopted = false }: DogGridProps) {
+export default function DogGrid({ dogs }: DogGridProps) {
   const { setPage, page } = useAppContext();
   const observer = useRef<IntersectionObserver | null>(null);
 
@@ -41,7 +40,6 @@ export default function DogGrid({ dogs, adopted = false }: DogGridProps) {
             ref={isSentinel ? lastDogRef : undefined}
             dog={dog}
             index={index}
-            adopted={adopted}
           />
         );
       })}

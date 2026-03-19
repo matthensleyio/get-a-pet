@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import NotificationBell from './NotificationBell';
 import NotificationPanel from './NotificationPanel';
@@ -25,7 +26,7 @@ export default function Header() {
     <header className="site-header">
       <div className="header-inner">
         <div className="header-brand">
-          <h1 className="site-title">Get-A-Pet</h1>
+          <Link to="/" className="site-title">Get-A-Pet</Link>
           <p className="header-tagline">Be the first to know when your perfect pet is available.</p>
         </div>
         <div className="header-controls">

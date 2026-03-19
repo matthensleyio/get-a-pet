@@ -80,6 +80,7 @@ body.offline #content-wrapper {
   line-height: 1.1;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  text-decoration: none;
 }
 
 .header-tagline {
@@ -635,7 +636,7 @@ a.dog-card {
   letter-spacing: 0.01em;
 }
 
-.dog-card-info p {
+.dog-card-meta {
   font-size: 0.72rem;
   color: var(--text-muted);
   font-weight: 500;
@@ -643,19 +644,23 @@ a.dog-card {
 }
 
 .dog-card-breed {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.dog-card-tags {
+.dog-card-trait-badges {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   margin-top: 6px;
 }
 
-.dog-card-tag {
+.dog-card-trait-badge {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -666,20 +671,31 @@ a.dog-card {
   white-space: nowrap;
 }
 
+.dog-card-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.dog-card-name-row h3 {
+  margin-bottom: 0;
+  flex: 1;
+  min-width: 0;
+}
+
 .new-badge {
-  position: absolute;
-  top: 8px;
-  left: 8px;
   background: var(--primary);
   color: var(--bg);
   font-family: var(--font-display);
-  font-size: 0.5rem;
+  font-size: 0.45rem;
   font-weight: 400;
-  padding: 4px 10px;
+  padding: 3px 7px;
   border-radius: 4px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  pointer-events: none;
+  flex-shrink: 0;
+  line-height: 1.4;
 }
 
 .adopted-badge {
@@ -1358,40 +1374,96 @@ a.dog-card {
 }
 
 /* ── Loading state ─────────────────────────────────────────── */
-@keyframes shimmer {
+@keyframes skeleton-shimmer {
   0%   { background-position: -600px 0; }
   100% { background-position:  600px 0; }
 }
 
-.dog-grid.grid-loading .dog-card {
-  pointer-events: none;
-  opacity: 0.45;
-  transition: opacity 0.15s;
-}
-
 .dog-card--skeleton {
-  min-height: 280px;
-  animation: none;
+  animation: card-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
   cursor: default;
+  pointer-events: none;
 }
 
-.dog-grid.grid-loading .dog-card--skeleton {
-  opacity: 1;
+.dog-card--skeleton:hover {
+  transform: none;
+  box-shadow: none;
 }
 
-.dog-grid.grid-loading::after {
-  content: '';
-  position: absolute;
-  inset: 0;
+.skeleton-img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+.skeleton-body {
+  padding: 12px 14px 16px;
+  border-top: 2px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-line {
+  height: 10px;
+  border-radius: 4px;
+}
+
+.skeleton-line--name  { width: 60%; height: 13px; }
+.skeleton-line--meta  { width: 45%; }
+.skeleton-line--breed { width: 75%; }
+
+.skeleton-img,
+.skeleton-line {
   background: linear-gradient(
     90deg,
-    transparent 20%,
-    rgba(255, 255, 255, 0.45) 50%,
-    transparent 80%
+    var(--surface) 25%,
+    var(--border)  50%,
+    var(--surface) 75%
   );
-  background-size: 1200px 100%;
-  animation: shimmer 1.4s infinite linear;
-  pointer-events: none;
+  background-size: 800px 100%;
+  animation: skeleton-shimmer 1.6s infinite linear;
+  animation-delay: calc(var(--i, 0) * 80ms);
+}
+
+/* ── Detail page skeleton ───────────────────────────────────── */
+.detail-skeleton-back-btn {
+  flex: 1;
+  height: 40px;
+  border-radius: var(--radius);
+}
+
+.detail-skeleton-fav-btn {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius);
+}
+
+.detail-skeleton-photo {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+.detail-skeleton-name {
+  width: 52%;
+  height: 30px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.detail-skeleton-label {
+  width: 24%;
+  height: 11px;
+}
+
+.detail-skeleton-value {
+  height: 11px;
+}
+
+.detail-skeleton-cta {
+  width: 100%;
+  height: 46px;
   border-radius: var(--radius);
 }
 

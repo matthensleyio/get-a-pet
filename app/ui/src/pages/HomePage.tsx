@@ -48,14 +48,21 @@ export default function HomePage() {
       {activeTab === 'available' && (
         <div className="tab-panel">
           <FilterBar />
-          {statusQuery.isPending ? (
-            <div className="dog-grid grid-loading">
+          {(statusQuery.isPending || new URLSearchParams(window.location.search).has('skeleton')) ? (
+            <div className="dog-grid">
               {Array.from({ length: 12 }).map((_, i) => (
                 <div
                   key={i}
                   className="dog-card dog-card--skeleton"
                   style={{ '--i': i } as React.CSSProperties}
-                />
+                >
+                  <div className="skeleton-img" />
+                  <div className="skeleton-body">
+                    <div className="skeleton-line skeleton-line--name" />
+                    <div className="skeleton-line skeleton-line--meta" />
+                    <div className="skeleton-line skeleton-line--breed" />
+                  </div>
+                </div>
               ))}
             </div>
           ) : visibleDogs.length > 0 ? (
@@ -87,7 +94,7 @@ export default function HomePage() {
       {activeTab === 'adopted' && (
         <div className="tab-panel adopted-panel">
           {visibleAdoptedDogs.length > 0 ? (
-            <DogGrid dogs={visibleAdoptedDogs} adopted />
+            <DogGrid dogs={visibleAdoptedDogs} />
           ) : (
             <EmptyState
               title="No recent adoptions"

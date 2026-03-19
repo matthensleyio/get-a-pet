@@ -96,10 +96,32 @@ export default function DogDetailPage() {
 
   const shareUrl = `${window.location.origin}/api/share/${aid}?utm_content=share-link`;
 
-  if (!dog && !fallbackData) {
+  const valueWidths = ['55%', '15%', '22%', '48%', '18%', '20%'];
+
+  if (!dog && (!fallbackData || new URLSearchParams(window.location.search).has('skeleton'))) {
     return (
       <div className="detail-page">
-        <div className="dog-detail-loading">Loading&hellip;</div>
+        <div className="detail-sticky-bar">
+          <div className="detail-skeleton-back-btn skeleton-line" />
+          <div className="detail-skeleton-fav-btn skeleton-line" />
+        </div>
+        <div className="detail-hero">
+          <div className="detail-skeleton-photo skeleton-img" />
+        </div>
+        <div className="detail-body">
+          <div className="detail-skeleton-name skeleton-line" />
+          <div className="detail-rows">
+            {valueWidths.map((w, i) => (
+              <div key={i} className="detail-row">
+                <div className="detail-skeleton-label skeleton-line" />
+                <div className="detail-skeleton-value skeleton-line" style={{ width: w }} />
+              </div>
+            ))}
+          </div>
+          <div className="detail-actions">
+            <div className="detail-skeleton-cta skeleton-line" />
+          </div>
+        </div>
       </div>
     );
   }
