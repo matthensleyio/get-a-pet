@@ -46,6 +46,7 @@ namespace GetAPet.Shelter.Import
 
                     services.AddScoped<ScrapingEngine>();
                     services.AddScoped<ShelterLuvScrapingEngine>();
+                    services.AddScoped<ShelterLuvV3ScrapingEngine>();
                     services.AddScoped<DogDiffEngine>();
                     services.AddScoped<NotificationEngine>();
 
