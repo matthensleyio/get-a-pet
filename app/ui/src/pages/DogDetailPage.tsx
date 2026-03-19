@@ -167,7 +167,7 @@ export default function DogDetailPage() {
       </div>
       <div className="detail-parallax-stage" ref={stageRef}>
         <div className="detail-hero">
-          {dog.photoUrl && <img ref={imgRef} src={dog.photoUrl} alt={dog.name ?? 'Dog'} onLoad={syncImgHeight} />}
+          <img ref={imgRef} src={dog.photoUrl ?? '/dog-placeholder.svg'} alt={dog.name ?? 'Dog'} onLoad={syncImgHeight} />
         </div>
       </div>
       <div className="detail-body">

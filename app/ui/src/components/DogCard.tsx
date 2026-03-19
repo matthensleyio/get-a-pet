@@ -32,11 +32,11 @@ const DogCard = forwardRef<HTMLAnchorElement, DogCardProps>(
         className={`dog-card${isAdoptedDog ? ' dog-card--adopted' : ''}`}
         style={{ '--i': Math.min(index, 15) } as React.CSSProperties}
       >
-        {dog.photoUrl ? (
-          <img src={dog.photoUrl} alt={dog.name ?? 'Dog'} loading="lazy" />
-        ) : (
-          <img src="" alt="No photo" style={{ background: 'var(--surface)' }} />
-        )}
+        <img
+          src={dog.photoUrl ?? '/dog-placeholder.svg'}
+          alt={dog.name ?? 'Dog'}
+          loading="lazy"
+        />
         {isNew && <span className="new-badge">New</span>}
         {isAdoptedDog && (
           <span className="adopted-badge">
