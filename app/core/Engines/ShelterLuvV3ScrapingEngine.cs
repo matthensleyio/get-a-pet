@@ -34,6 +34,7 @@ public sealed class ShelterLuvV3ScrapingEngine(
             }
 
             return response.Animals
+                .Where(animal => String.Equals(animal.Species, "Dog", StringComparison.OrdinalIgnoreCase))
                 .Select(animal => MapToDog(animal, shelter))
                 .ToList();
         }

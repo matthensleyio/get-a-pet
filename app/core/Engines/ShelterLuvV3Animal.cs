@@ -41,6 +41,9 @@ internal sealed class ShelterLuvV3Animal
     [JsonPropertyName("photos")]
     public JsonElement Photos { get; init; }
 
+    [JsonPropertyName("species")]
+    public string? Species { get; init; }
+
     [JsonPropertyName("public_url")]
     public string? PublicUrl { get; init; }
 }
