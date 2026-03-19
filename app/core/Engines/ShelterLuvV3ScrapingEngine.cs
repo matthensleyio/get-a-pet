@@ -62,13 +62,15 @@ public sealed class ShelterLuvV3ScrapingEngine(
             ? DateTimeOffset.FromUnixTimeSeconds(ts)
             : null;
 
+        var allPhotos = ExtractAllPhotoUrls(animal.Photos);
+
         return new Dog(
             animal.UniqueId,
             shelter.ShelterId,
             animal.Name,
             animal.AgeGroup?.Name,
             animal.Sex,
-            ExtractCoverPhoto(animal.Photos),
+            allPhotos.Count > 0 ? allPhotos[0] : null,
             breed?.Trim(),
             color?.Trim(),
             NormalizeSize(animal.WeightGroup),
@@ -78,54 +80,53 @@ public sealed class ShelterLuvV3ScrapingEngine(
             animal.PublicUrl,
             default,
             intakeDate,
-            null);
+            null,
+            allPhotos.Count > 0 ? allPhotos : null);
     }
 
-    private static string? ExtractCoverPhoto(JsonElement photos)
+    private static IReadOnlyList<string> ExtractAllPhotoUrls(JsonElement photos)
     {
-        if (photos.ValueKind == JsonValueKind.Object)
+        string? coverUrl = null;
+        var rest = new List<string>();
+
+        IEnumerable<JsonElement> elements = photos.ValueKind switch
         {
-            string? firstUrl = null;
-            foreach (var prop in photos.EnumerateObject())
+            JsonValueKind.Object => photos.EnumerateObject().Select(p => p.Value),
+            JsonValueKind.Array => photos.EnumerateArray(),
+            _ => []
+        };
+
+        foreach (var el in elements)
+        {
+            if (!el.TryGetProperty("url", out var urlEl))
             {
-                if (!prop.Value.TryGetProperty("url", out var urlEl))
-                {
-                    continue;
-                }
-
-                var url = urlEl.GetString();
-                firstUrl ??= url;
-
-                if (prop.Value.TryGetProperty("isCover", out var isCoverEl) && isCoverEl.GetBoolean())
-                {
-                    return url;
-                }
+                continue;
             }
-            return firstUrl;
+
+            var url = urlEl.GetString();
+            if (url is null)
+            {
+                continue;
+            }
+
+            if (el.TryGetProperty("isCover", out var isCoverEl) && isCoverEl.GetBoolean())
+            {
+                coverUrl = url;
+            }
+            else
+            {
+                rest.Add(url);
+            }
         }
 
-        if (photos.ValueKind == JsonValueKind.Array)
+        var result = new List<string>();
+        if (coverUrl is not null)
         {
-            string? firstUrl = null;
-            foreach (var photo in photos.EnumerateArray())
-            {
-                if (!photo.TryGetProperty("url", out var urlEl))
-                {
-                    continue;
-                }
-
-                var url = urlEl.GetString();
-                firstUrl ??= url;
-
-                if (photo.TryGetProperty("isCover", out var isCoverEl) && isCoverEl.GetBoolean())
-                {
-                    return url;
-                }
-            }
-            return firstUrl;
+            result.Add(coverUrl);
         }
 
-        return null;
+        result.AddRange(rest);
+        return result;
     }
 
     private static string? NormalizeSize(string? size)

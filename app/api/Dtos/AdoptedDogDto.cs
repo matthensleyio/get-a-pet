@@ -16,4 +16,5 @@ public sealed record AdoptedDogDto(
     string? ProfileUrl,
     DateTimeOffset FirstSeen,
     DateTimeOffset? IntakeDate,
-    DateTimeOffset AdoptedAt);
+    DateTimeOffset AdoptedAt,
+    string[] PhotoUrls);

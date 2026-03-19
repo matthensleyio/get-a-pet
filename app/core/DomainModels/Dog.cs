@@ -16,4 +16,5 @@ public sealed record Dog(
     string? ProfileUrl,
     DateTimeOffset FirstSeen,
     DateTimeOffset? IntakeDate,
-    DateTimeOffset? ListingDate);
+    DateTimeOffset? ListingDate,
+    IReadOnlyList<string>? PhotoUrls = null);

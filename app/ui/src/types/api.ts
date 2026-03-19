@@ -31,6 +31,7 @@ export interface DogDto {
   firstSeen: string;
   intakeDate: string | null;
   listingDate: string | null;
+  photoUrls: string[];
 }
 
 export interface AdoptedDogDto {
@@ -50,6 +51,7 @@ export interface AdoptedDogDto {
   firstSeen: string;
   intakeDate: string | null;
   adoptedAt: string;
+  photoUrls: string[];
 }
 
 export interface StatusResponseDto {

@@ -16,4 +16,5 @@ public sealed record AdoptedDog(
     string? ProfileUrl,
     DateTimeOffset FirstSeen,
     DateTimeOffset? IntakeDate,
-    DateTimeOffset AdoptedAt);
+    DateTimeOffset AdoptedAt,
+    IReadOnlyList<string>? PhotoUrls = null);

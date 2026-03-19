@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchStatus } from '../utils/api';
 import { timeAgo } from '../utils/timeAgo';
 import ShareButton from '../components/ShareButton';
+import PhotoCarousel from '../components/PhotoCarousel';
 import { useAppContext } from '../context/AppContext';
 import type { CachedStatusData } from '../types/api';
 import type { DogDto, AdoptedDogDto } from '../types/api';
@@ -202,7 +203,12 @@ export default function DogDetailPage() {
       </div>
       <div className="detail-parallax-stage" ref={stageRef}>
         <div className="detail-hero">
-          <img ref={imgRef} src={dog.photoUrl ?? '/dog-placeholder.svg'} alt={dog.name ?? 'Dog'} onLoad={syncImgHeight} />
+          <PhotoCarousel
+            ref={imgRef}
+            photos={dog.photoUrls?.length ? dog.photoUrls : (dog.photoUrl ? [dog.photoUrl] : ['/dog-placeholder.svg'])}
+            alt={dog.name ?? 'Dog'}
+            onLoad={syncImgHeight}
+          />
         </div>
       </div>
       <div className="detail-body">

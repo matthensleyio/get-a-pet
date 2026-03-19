@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using Azure;
 using Azure.Data.Tables;
 
@@ -54,7 +56,8 @@ public sealed class AdoptedDogRepository(TableServiceClient tableServiceClient)
                 ["ProfileUrl"] = dog.ProfileUrl,
                 ["FirstSeen"] = dog.FirstSeen,
                 ["IntakeDate"] = dog.IntakeDate,
-                ["AdoptedAt"] = adoptedAt
+                ["AdoptedAt"] = adoptedAt,
+                ["PhotoUrls"] = dog.PhotoUrls is { Count: > 0 } ? JsonSerializer.Serialize(dog.PhotoUrls) : null
             };
 
             await _tableClient.UpsertEntityAsync(entity, TableUpdateMode.Replace, ct);
@@ -92,6 +95,11 @@ public sealed class AdoptedDogRepository(TableServiceClient tableServiceClient)
 
     private static AdoptedDog MapToAdoptedDog(TableEntity entity)
     {
+        var photoUrlsJson = entity.GetString("PhotoUrls");
+        var photoUrls = photoUrlsJson is not null
+            ? JsonSerializer.Deserialize<List<string>>(photoUrlsJson)
+            : null;
+
         return new AdoptedDog(
             entity.GetString("Aid") ?? entity.RowKey,
             entity.GetString("ShelterId") ?? "khs",
@@ -108,6 +116,7 @@ public sealed class AdoptedDogRepository(TableServiceClient tableServiceClient)
             entity.GetString("ProfileUrl"),
             entity.GetDateTimeOffset("FirstSeen") ?? DateTimeOffset.UtcNow,
             entity.GetDateTimeOffset("IntakeDate"),
-            entity.GetDateTimeOffset("AdoptedAt") ?? DateTimeOffset.UtcNow);
+            entity.GetDateTimeOffset("AdoptedAt") ?? DateTimeOffset.UtcNow,
+            photoUrls is { Count: > 0 } ? photoUrls : null);
     }
 }

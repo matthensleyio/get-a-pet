@@ -1739,6 +1739,66 @@ a.dog-card {
   display: block;
 }
 
+.photo-carousel {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;
+  user-select: none;
+  cursor: grab;
+}
+
+.photo-carousel:active {
+  cursor: grabbing;
+}
+
+.photo-carousel-track {
+  display: flex;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.photo-carousel-track img {
+  width: 100%;
+  flex-shrink: 0;
+  max-height: 60vh;
+  object-fit: contain;
+  object-position: top;
+  display: block;
+  pointer-events: none;
+}
+
+.photo-carousel-dots {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 20px;
+  background: rgba(44, 24, 16, 0.18);
+}
+
+.photo-carousel-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 248, 238, 0.55);
+  flex-shrink: 0;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.photo-carousel-dot.active {
+  background: var(--primary);
+  transform: scale(1.35);
+}
+
+@media (max-width: 639px) {
+  .photo-carousel-track img {
+    max-height: none;
+  }
+}
+
 .detail-body {
   max-width: 680px;
   margin: 0 auto;

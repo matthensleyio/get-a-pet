@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using Azure;
 using Azure.Data.Tables;
 using Microsoft.Extensions.Caching.Memory;
@@ -82,7 +84,8 @@ public sealed class DogRepository(TableServiceClient tableServiceClient, IMemory
             ["ProfileUrl"] = dog.ProfileUrl,
             ["FirstSeen"] = firstSeen,
             ["IntakeDate"] = dog.IntakeDate,
-            ["ListingDate"] = dog.ListingDate
+            ["ListingDate"] = dog.ListingDate,
+            ["PhotoUrls"] = dog.PhotoUrls is { Count: > 0 } ? JsonSerializer.Serialize(dog.PhotoUrls) : null
         };
     }
 
@@ -119,6 +122,11 @@ public sealed class DogRepository(TableServiceClient tableServiceClient, IMemory
 
     private static Dog MapToDog(TableEntity entity)
     {
+        var photoUrlsJson = entity.GetString("PhotoUrls");
+        var photoUrls = photoUrlsJson is not null
+            ? JsonSerializer.Deserialize<List<string>>(photoUrlsJson)
+            : null;
+
         return new Dog(
             entity.GetString("Aid") ?? entity.RowKey,
             entity.GetString("ShelterId") ?? "khs",
@@ -135,6 +143,7 @@ public sealed class DogRepository(TableServiceClient tableServiceClient, IMemory
             entity.GetString("ProfileUrl"),
             entity.GetDateTimeOffset("FirstSeen") ?? DateTimeOffset.UtcNow,
             entity.GetDateTimeOffset("IntakeDate"),
-            entity.GetDateTimeOffset("ListingDate"));
+            entity.GetDateTimeOffset("ListingDate"),
+            photoUrls is { Count: > 0 } ? photoUrls : null);
     }
 }
