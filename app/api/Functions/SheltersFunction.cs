@@ -9,7 +9,8 @@ namespace Api.Functions;
 
 public sealed class SheltersFunction(
     IReadOnlyList<ShelterConfig> shelters,
-    IReadOnlyList<ShelterLuvConfig> shelterLuvShelters)
+    IReadOnlyList<ShelterLuvConfig> shelterLuvShelters,
+    IReadOnlyList<ShelterLuvV3Config> shelterLuvV3Shelters)
 {
     [Function("Shelters")]
     public IActionResult Run(
@@ -18,6 +19,7 @@ public sealed class SheltersFunction(
         var dtos = shelters
             .Select(s => new ShelterDto(s.ShelterId, s.ShelterName))
             .Concat(shelterLuvShelters.Select(s => new ShelterDto(s.ShelterId, s.ShelterName)))
+            .Concat(shelterLuvV3Shelters.Select(s => new ShelterDto(s.ShelterId, s.ShelterName)))
             .ToArray();
 
         return new OkObjectResult(dtos);

@@ -39,6 +39,12 @@ namespace GetAPet.Shelter.Import
                     ];
                     services.AddSingleton(shelterLuvShelters);
 
+                    IReadOnlyList<ShelterLuvV3Config> shelterLuvV3Shelters =
+                    [
+                        new ShelterLuvV3Config("hsgkc", "Humane Society of Greater Kansas City", "https://www.shelterluv.com/api/v3/available-animals/26960?type=Dog")
+                    ];
+                    services.AddSingleton(shelterLuvV3Shelters);
+
                     services.AddScoped<StateRepository>();
                     services.AddScoped<DogRepository>();
                     services.AddScoped<AdoptedDogRepository>();

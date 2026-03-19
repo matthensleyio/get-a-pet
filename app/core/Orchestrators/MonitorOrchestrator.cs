@@ -12,6 +12,7 @@ namespace Core.Orchestrators;
 public sealed class MonitorOrchestrator(
     ScrapingEngine scrapingEngine,
     ShelterLuvScrapingEngine shelterLuvScrapingEngine,
+    ShelterLuvV3ScrapingEngine shelterLuvV3ScrapingEngine,
     DogDiffEngine dogDiffEngine,
     NotificationEngine notificationEngine,
     StateRepository stateRepository,
@@ -19,6 +20,7 @@ public sealed class MonitorOrchestrator(
     AdoptedDogRepository adoptedDogRepository,
     SubscriptionRepository subscriptionRepository,
     IReadOnlyList<ShelterLuvConfig> shelterLuvConfigs,
+    IReadOnlyList<ShelterLuvV3Config> shelterLuvV3Configs,
     ILogger<MonitorOrchestrator> logger)
 {
     public async Task CheckAsync(CancellationToken ct)
@@ -28,8 +30,10 @@ public sealed class MonitorOrchestrator(
         var state = await stateRepository.GetStateAsync(ct);
         var petBridgeDogs = await scrapingEngine.GetAllDogsAsync(ct);
         var shelterLuvDogs = await shelterLuvScrapingEngine.GetAllDogsAsync(ct);
+        var shelterLuvV3Dogs = await shelterLuvV3ScrapingEngine.GetAllDogsAsync(ct);
         var currentDogs = petBridgeDogs
             .Concat(shelterLuvDogs)
+            .Concat(shelterLuvV3Dogs)
             .DistinctBy(DogDiffEngine.CompositeKey)
             .ToList();
 
@@ -130,7 +134,9 @@ public sealed class MonitorOrchestrator(
             .DistinctBy(DogDiffEngine.CompositeKey)
             .ToList();
 
-        var shelterLuvShelterIds = shelterLuvConfigs.Select(s => s.ShelterId).ToHashSet();
+        var shelterLuvShelterIds = shelterLuvConfigs.Select(s => s.ShelterId)
+            .Concat(shelterLuvV3Configs.Select(s => s.ShelterId))
+            .ToHashSet();
         var detailTasks = dogsToFetch
             .Select(d => shelterLuvShelterIds.Contains(d.ShelterId)
                 ? Task.FromResult<DogDetail?>(null)
