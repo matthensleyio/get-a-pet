@@ -5,7 +5,6 @@ import { AppProvider, useAppContext } from './context/AppContext';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import Header from './components/Header';
 import OfflineBanner from './components/OfflineBanner';
-import Footer from './components/Footer';
 import IosBanner from './components/IosBanner';
 import NotificationSetupModal from './components/NotificationSetupModal';
 import HomePage from './pages/HomePage';
@@ -73,8 +72,7 @@ function AppShell() {
         <Route path="/" element={<HomePage />} />
         <Route path="/dogs/:aid/details" element={<DogDetailPage />} />
       </Routes>
-      <Footer />
-      {isNotifSetupOpen && <NotificationSetupModal />}
+{isNotifSetupOpen && <NotificationSetupModal />}
       <IosBanner />
     </div>
   );

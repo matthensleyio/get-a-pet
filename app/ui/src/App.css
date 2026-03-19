@@ -97,50 +97,6 @@ body.offline #content-wrapper {
   gap: 8px;
 }
 
-.site-footer {
-  background: var(--surface);
-  border-top: 1.5px solid var(--border);
-}
-
-.footer-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 10px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-}
-
-.site-footer .status-pill {
-  background: var(--card);
-  border: 1.5px solid var(--border);
-  padding: 4px 12px;
-  font-size: 0.68rem;
-  color: var(--text-muted);
-}
-
-.site-footer .status-pill--paused:hover {
-  background: var(--border);
-}
-
-.site-footer .status-indicator {
-  background: #5DBF61;
-}
-
-@keyframes pulse-dot-footer {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(93, 191, 97, 0.45); }
-  50%       { box-shadow: 0 0 0 4px rgba(93, 191, 97, 0); }
-}
-
-.site-footer .status-indicator:not(.inactive) {
-  animation: pulse-dot-footer 2.2s ease-in-out infinite;
-}
-
-.site-footer .last-checked {
-  font-size: 0.68rem;
-  color: var(--text-light);
-}
 
 .status-pill {
   display: inline-flex;
@@ -1790,10 +1746,6 @@ a.dog-card {
 }
 
 @media (max-width: 639px) {
-  .detail-page {
-    padding-bottom: 0;
-  }
-
   .detail-parallax-stage {
     height: calc(2 * var(--img-h, 60vh) + 4px);
   }

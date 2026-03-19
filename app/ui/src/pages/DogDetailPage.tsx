@@ -21,17 +21,30 @@ export default function DogDetailPage() {
 
   const stageRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
+  const maxScrollRef = useRef<number>(0);
 
   const syncImgHeight = () => {
     if (imgRef.current && stageRef.current) {
       const h = imgRef.current.getBoundingClientRect().height;
       stageRef.current.style.setProperty('--img-h', `${h}px`);
       stageRef.current.parentElement?.style.setProperty('--img-h', `${h}px`);
+      maxScrollRef.current = h + 24;
     }
   };
 
   useEffect(() => {
     window.scrollTo(0, 0);
+  }, [aid]);
+
+  useEffect(() => {
+    if (!window.matchMedia('(max-width: 639px)').matches) return;
+    const cap = () => {
+      if (maxScrollRef.current > 0 && window.scrollY > maxScrollRef.current) {
+        window.scrollTo(0, maxScrollRef.current);
+      }
+    };
+    window.addEventListener('scroll', cap, { passive: true });
+    return () => window.removeEventListener('scroll', cap);
   }, [aid]);
 
   useEffect(() => {
