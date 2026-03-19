@@ -7,4 +7,5 @@ public sealed record DogDetail(
     string? Weight,
     string? AdoptionFee,
     string? CurrentLocation,
-    DateTimeOffset? IntakeDate);
+    DateTimeOffset? IntakeDate,
+    IReadOnlyList<string>? PhotoUrls = null);

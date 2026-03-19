@@ -85,6 +85,10 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory, IReadOn
                 ? parsed
                 : null;
 
+            var photoUrls = PhotoRegex3.Matches(html)
+                .Select(m => m.Groups[1].Value)
+                .ToList();
+
             return new DogDetail(
                 ExtractGroup(BreedRegex, html)?.Trim(),
                 ExtractGroup(ColorRegex, html)?.Trim(),
@@ -92,7 +96,8 @@ public sealed class ScrapingEngine(IHttpClientFactory httpClientFactory, IReadOn
                 ExtractGroup(WeightRegex, html)?.Trim(),
                 ExtractGroup(AdoptionFeeRegex, html)?.Trim(),
                 ExtractGroup(LocationRegex, html)?.Trim(),
-                intakeDate);
+                intakeDate,
+                photoUrls.Count > 0 ? photoUrls : null);
         }
         catch (HttpRequestException)
         {

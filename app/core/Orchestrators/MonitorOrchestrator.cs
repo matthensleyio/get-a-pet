@@ -154,7 +154,8 @@ public sealed class MonitorOrchestrator(
                 Weight = detail.Weight,
                 AdoptionFee = detail.AdoptionFee,
                 CurrentLocation = detail.CurrentLocation,
-                IntakeDate = detail.IntakeDate ?? dog.IntakeDate
+                IntakeDate = detail.IntakeDate ?? dog.IntakeDate,
+                PhotoUrls = detail.PhotoUrls is { Count: > 0 } ? detail.PhotoUrls : dog.PhotoUrls
             } : dog)
             .ToDictionary(DogDiffEngine.CompositeKey);
 
