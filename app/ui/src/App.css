@@ -1790,6 +1790,10 @@ a.dog-card {
 }
 
 @media (max-width: 639px) {
+  .detail-page {
+    padding-bottom: 0;
+  }
+
   .detail-parallax-stage {
     height: calc(2 * var(--img-h, 60vh) + 4px);
   }
