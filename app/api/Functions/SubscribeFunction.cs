@@ -6,9 +6,10 @@ using Core.DomainModels;
 using Api.Dtos;
 using Core.Repositories;
 
+
 namespace Api.Functions;
 
-public sealed class SubscribeFunction(SubscriptionRepository subscriptionRepository)
+public sealed class SubscribeFunction(SubscriptionRepository subscriptionRepository, FavoritesRepository favoritesRepository)
 {
     [Function("Subscribe")]
     public async Task<IActionResult> RunAsync(
@@ -30,6 +31,7 @@ public sealed class SubscribeFunction(SubscriptionRepository subscriptionReposit
         else
         {
             await subscriptionRepository.RemoveByEndpointAsync(dto.Endpoint, ct);
+            await favoritesRepository.RemoveByEndpointAsync(dto.Endpoint, ct);
         }
 
         return new OkResult();

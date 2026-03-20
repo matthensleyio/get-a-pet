@@ -23,7 +23,7 @@ namespace GetAPet.Shelter.Import
             var centralNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, CentralTimeZone);
             if (centralNow.Hour < 5 || centralNow.Hour >= 20)
             {
-                logger.LogDebug("Skipping check outside active hours ({Hour}:xx Central)", centralNow.Hour);
+                logger.LogInformation("Skipping check outside active hours ({Hour}:xx Central)", centralNow.Hour);
                 return;
             }
 

@@ -49,6 +49,7 @@ public sealed class Program
                 services.AddScoped<DogRepository>();
                 services.AddScoped<AdoptedDogRepository>();
                 services.AddScoped<SubscriptionRepository>();
+                services.AddScoped<FavoritesRepository>();
 
                 services.AddScoped<ScrapingEngine>();
                 services.AddScoped<DogDiffEngine>();
@@ -66,6 +67,7 @@ public sealed class Program
             await tables.CreateTableIfNotExistsAsync("SiteState");
             await tables.CreateTableIfNotExistsAsync("PushSubscriptions");
             await tables.CreateTableIfNotExistsAsync("AdoptedDogs");
+            await tables.CreateTableIfNotExistsAsync("Favorites");
         }
         catch (Exception ex)
         {

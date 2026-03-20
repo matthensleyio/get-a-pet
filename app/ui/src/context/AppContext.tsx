@@ -56,7 +56,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const shelters = useSheltersQuery();
   const statusQuery = useStatusQuery();
   const push = usePushNotifications();
-  const { favoriteKeys, toggleFavorite, isFavorite, pruneToKeys } = useFavorites();
+  const { favoriteKeys, toggleFavorite, isFavorite, pruneToKeys } = useFavorites(
+    push.currentSubData?.endpoint ?? null,
+  );
 
   const setActiveTab = useCallback((tab: ActiveTab) => {
     setActiveTabState(tab);

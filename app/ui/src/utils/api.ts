@@ -35,3 +35,35 @@ export async function unsubscribePush(
     body: JSON.stringify(request),
   });
 }
+
+export async function fetchFavorites(
+  endpoint: string,
+): Promise<{ aid: string; shelterId: string }[]> {
+  const res = await fetch(`/api/favorites?endpoint=${encodeURIComponent(endpoint)}`);
+  if (!res.ok) return [];
+  return res.json() as Promise<{ aid: string; shelterId: string }[]>;
+}
+
+export async function addFavorite(
+  endpoint: string,
+  aid: string,
+  shelterId: string,
+): Promise<void> {
+  await fetch('/api/favorites', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ endpoint, aid, shelterId }),
+  });
+}
+
+export async function removeFavorite(
+  endpoint: string,
+  aid: string,
+  shelterId: string,
+): Promise<void> {
+  await fetch('/api/favorites', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ endpoint, aid, shelterId }),
+  });
+}

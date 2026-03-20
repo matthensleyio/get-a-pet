@@ -49,6 +49,26 @@ public sealed class SubscriptionRepository(TableServiceClient tableServiceClient
         await _tableClient.UpsertEntityAsync(entity, TableUpdateMode.Replace, ct);
     }
 
+    public async Task<IReadOnlyDictionary<string, PushSubscription>> GetAllByHashAsync(CancellationToken ct)
+    {
+        var subscriptions = new Dictionary<string, PushSubscription>();
+
+        await foreach (var entity in _tableClient.QueryAsync<TableEntity>(cancellationToken: ct))
+        {
+            var shelterIdsRaw = entity.GetString("ShelterIds") ?? string.Empty;
+            var shelterIds = shelterIdsRaw.Length > 0
+                ? shelterIdsRaw.Split(',').Where(s => s.Length > 0).ToList()
+                : (IReadOnlyList<string>)[];
+            subscriptions[entity.RowKey] = new PushSubscription(
+                entity.GetString("Endpoint") ?? string.Empty,
+                entity.GetString("P256dh") ?? string.Empty,
+                entity.GetString("Auth") ?? string.Empty,
+                shelterIds);
+        }
+
+        return subscriptions;
+    }
+
     public async Task RemoveByEndpointAsync(string endpoint, CancellationToken ct)
     {
         var hash = ComputeHash(endpoint);

@@ -38,6 +38,34 @@ public sealed class NotificationEngine(IConfiguration configuration)
             $"/dogs/{dog.Aid}/details");
     }
 
+    public NotificationPayload BuildRelistedPayload(Dog dog)
+    {
+        var bodyParts = new List<string>();
+
+        if (dog.Breed is not null)
+        {
+            bodyParts.Add($"Breed: {dog.Breed}");
+        }
+
+        if (dog.Gender is not null)
+        {
+            bodyParts.Add(dog.Gender);
+        }
+
+        if (dog.Age is not null)
+        {
+            bodyParts.Add(dog.Age);
+        }
+
+        var body = String.Join(" - ", bodyParts);
+
+        return new NotificationPayload(
+            $"{dog.Name} has been relisted for adoption!",
+            body,
+            dog.PhotoUrl,
+            $"/dogs/{dog.Aid}/details");
+    }
+
     public async Task SendAsync(
         NotificationPayload payload,
         DomainModels.PushSubscription subscription,

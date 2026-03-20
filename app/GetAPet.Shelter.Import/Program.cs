@@ -53,6 +53,7 @@ namespace GetAPet.Shelter.Import
                     services.AddScoped<DogRepository>();
                     services.AddScoped<AdoptedDogRepository>();
                     services.AddScoped<SubscriptionRepository>();
+                    services.AddScoped<FavoritesRepository>();
 
                     services.AddScoped<ScrapingEngine>();
                     services.AddScoped<ShelterLuvScrapingEngine>();
@@ -87,6 +88,7 @@ namespace GetAPet.Shelter.Import
                 await tables.CreateTableIfNotExistsAsync("SiteState");
                 await tables.CreateTableIfNotExistsAsync("PushSubscriptions");
                 await tables.CreateTableIfNotExistsAsync("AdoptedDogs");
+                await tables.CreateTableIfNotExistsAsync("Favorites");
             }
             catch (ArgumentException ex)
             {
