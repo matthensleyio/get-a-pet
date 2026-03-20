@@ -101,7 +101,7 @@ public sealed class MonitorOrchestrator(
 
         if (diff.RemovedAids.Count > 0)
         {
-            logger.LogInformation("{Count} dog(s) removed", diff.RemovedAids.Count);
+            logger.LogInformation("{Count} dog(s) delisted", diff.RemovedAids.Count);
             var adoptedDogs = await dogRepository.GetByKeysAsync(diff.RemovedAids, ct);
             await adoptedDogRepository.SaveAsync(adoptedDogs, DateTimeOffset.UtcNow, ct);
             await dogRepository.RemoveDogsAsync(diff.RemovedAids, ct);

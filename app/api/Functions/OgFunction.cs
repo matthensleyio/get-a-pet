@@ -20,7 +20,9 @@ public sealed class OgFunction(DogRepository dogRepository, IReadOnlyList<Shelte
         var dog = dogs.FirstOrDefault(d => d.Aid == aid);
 
         if (dog is null)
-            return new RedirectResult("/");
+        {
+            return new RedirectResult($"/dogs/{Uri.EscapeDataString(aid)}/details");
+        }
 
         var shelterName = shelters.FirstOrDefault(s => s.ShelterId == dog.ShelterId)?.ShelterName ?? dog.ShelterId;
         var name = dog.Name ?? "A Dog";
