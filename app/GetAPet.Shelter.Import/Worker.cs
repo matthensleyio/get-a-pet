@@ -29,6 +29,8 @@ namespace GetAPet.Shelter.Import
 
             try
             {
+                logger.LogInformation("Monitor check starting");
+
                 using var scope = scopeFactory.CreateScope();
                 var orchestrator = scope.ServiceProvider.GetRequiredService<MonitorOrchestrator>();
                 await orchestrator.CheckAsync(ct);

@@ -17,6 +17,10 @@ namespace GetAPet.Shelter.Import
                     config.AddEnvironmentVariables();
                     config.AddUserSecrets<Program>(optional: true);
                 })
+                .ConfigureLogging(logging =>
+                {
+                    logging.AddFilter("System.Net.Http", LogLevel.Warning);
+                })
                 .ConfigureServices((ctx, services) =>
                 {
                     var connectionString = ctx.Configuration["STORAGE_CONNECTION_STRING"];
