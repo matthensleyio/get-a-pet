@@ -29,12 +29,12 @@ namespace GetAPet.Shelter.Import
 
             try
             {
-                logger.LogInformation("Monitor check starting");
-
                 using var scope = scopeFactory.CreateScope();
                 var orchestrator = scope.ServiceProvider.GetRequiredService<MonitorOrchestrator>();
+
+                logger.LogInformation("Monitor check starting at {Time:HH:mm} Central", centralNow);
                 await orchestrator.CheckAsync(ct);
-                logger.LogInformation("Monitor check completed at {Time:HH:mm} Central", centralNow);
+                logger.LogInformation("Monitor check completed at {Time:HH:mm} Central", TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, CentralTimeZone));
             }
             catch (Exception ex)
             {

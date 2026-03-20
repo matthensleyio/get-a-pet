@@ -23,9 +23,10 @@ public sealed class StatusOrchestrator(
         var state = await stateTask;
         var recentlyAdoptedRaw = await recentlyAdoptedTask;
 
+        var cutoff = DateTimeOffset.UtcNow.Subtract(TimeSpan.FromDays(1));
         var currentKeys = allDogs.Select(d => $"{d.ShelterId}-{d.Aid}").ToHashSet();
         var recentlyAdopted = recentlyAdoptedRaw
-            .Where(r => !currentKeys.Contains($"{r.ShelterId}-{r.Aid}"))
+            .Where(r => !currentKeys.Contains($"{r.ShelterId}-{r.Aid}") && r.AdoptedAt >= cutoff)
             .ToList();
 
         var centralNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, CentralTimeZone);
