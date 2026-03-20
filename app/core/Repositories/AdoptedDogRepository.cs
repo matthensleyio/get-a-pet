@@ -13,7 +13,7 @@ public sealed class AdoptedDogRepository(TableServiceClient tableServiceClient)
     private readonly TableClient _tableClient = tableServiceClient.GetTableClient("AdoptedDogs");
 
     private const string PartitionKey = "adopted";
-    private static readonly TimeSpan MaxAge = TimeSpan.FromHours(24);
+    private static readonly TimeSpan MaxAge = TimeSpan.FromDays(7);
 
     public async Task<IReadOnlyList<AdoptedDog>> GetRecentAsync(CancellationToken ct)
     {

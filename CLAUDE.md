@@ -4,7 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-**get-a-pet** — A PWA + Azure Functions app that monitors kshumane.org (via petbridge.org) for newly listed dogs and sends web push notifications. It replaces `Monitor-Dogs.ps1`.
+**get-a-pet** — A PWA + Azure Functions app that monitors multiple Kansas City shelters for newly listed dogs and sends web push notifications. It replaces `Monitor-Dogs.ps1`.
+
+Monitored shelters:
+- Kansas Humane Society (KHS) — via PetBridge
+- KC Pet Project — via PetBridge
+- Great Plains SPCA — via PetBridge
+- Pawsitive Tails Dog Rescue — via ShelterLuv API
+- Humane Society of Greater Kansas City — via ShelterLuv V3 API
 
 ## Commands
 
@@ -32,38 +39,48 @@ cd app/api && dotnet build
 cd app/ui && npm run build
 ```
 
-### Trigger Monitor Manually (local)
-
-```bash
-curl -X POST http://localhost:7071/api/monitor
-```
-
 ## Architecture
 
-### Request Flow
+### Monitor Flow
+
+The monitor is not exposed as an HTTP endpoint. `MonitorOrchestrator.CheckAsync()` must be invoked externally (e.g., via Azure Logic App or a scheduled runner):
 
 ```
-HTTP POST /api/monitor
-  -> MonitorHttpFunction (time-guard: skip outside 5am-8pm Central)
-    -> MonitorOrchestrator.CheckAsync()
-      -> ScrapingEngine.GetAllDogsAsync()
-      -> DogDiffEngine.ComputeDiff()
-      -> [new dogs] ScrapingEngine.GetDogBreedAsync() [per dog, parallel]
-      -> NotificationEngine.SendAsync() [per dog, per subscriber]
-      -> DogRepository.RemoveDogsAsync() [removed dogs]
-      -> DogRepository.UpsertDogsAsync()
-      -> StateRepository.SaveStateAsync()
+MonitorOrchestrator.CheckAsync()
+  -> AdoptedDogRepository.PruneOldAsync() [prune >7 day records]
+  -> StateRepository.GetStateAsync()
+  -> ScrapingEngine.GetAllDogsAsync() [PetBridge shelters]
+  -> ShelterLuvScrapingEngine.GetAllDogsAsync() [ShelterLuv shelters]
+  -> ShelterLuvV3ScrapingEngine.GetAllDogsAsync() [ShelterLuv V3 shelters]
+  -> merge + deduplicate by composite key ("{shelterId}-{aid}")
+  -> [first run] DogRepository.UpsertDogsAsync() + StateRepository.SaveStateAsync() [no notifications]
+  -> [subsequent] DogDiffEngine.ComputeDiff()
+    -> [new dogs] ScrapingEngine.GetDogDetailAsync() [per PetBridge dog, parallel]
+    -> NotificationEngine.SendAsync() [per notifiable dog, per subscriber]
+    -> [removed dogs] AdoptedDogRepository.SaveAsync() + DogRepository.RemoveDogsAsync()
+    -> DogRepository.UpsertDogsAsync()
+    -> StateRepository.SaveStateAsync()
 ```
 
-Every monitor invocation does a full scrape and replaces the stored dog list.
+Every monitor invocation does a full scrape and replaces the stored dog list. ShelterLuv dogs already include full detail; only PetBridge dogs require a separate detail fetch. Notifications are suppressed for first-time shelters and for dogs notified within the past 7 days.
+
+### HTTP API Endpoints
+
+- `GET /api/status` — Returns current dogs and recently adopted dogs (polls every 30s from frontend)
+- `GET /api/shelters` — Returns list of all configured shelters
+- `GET /api/vapid-public-key` — Returns VAPID public key for push subscription setup
+- `POST /api/subscribe` — Register push notification subscription
+- `DELETE /api/subscribe` — Unregister push notification subscription
+- `GET /api/share/{aid}` — OpenGraph preview HTML for dog sharing (redirects to detail page)
 
 ### Layer Boundaries
 
 - **Functions** (`app/api/Functions/`) - HTTP trigger handlers; map DTOs, no business logic
-- **Orchestrators** (`app/api/Orchestrators/`) - coordinate engines and repositories
-- **Engines** (`app/api/Engines/`) - pure business logic (scraping, diff, notifications)
-- **Repositories** (`app/api/Repositories/`) - Azure Table Storage access; map `TableEntity` to/from domain models internally
-- **DomainModels** (`app/api/DomainModels/`) - `record` types used across all layers
+- **Orchestrators** (`app/api/Orchestrators/`) - coordinate engines/repositories for HTTP responses (e.g., `StatusOrchestrator`)
+- **Orchestrators** (`app/core/Orchestrators/`) - coordinate engines/repositories for the monitor flow (`MonitorOrchestrator`)
+- **Engines** (`app/core/Engines/`) - pure business logic (scraping, diff, notifications)
+- **Repositories** (`app/core/Repositories/`) - Azure Table Storage access; map `TableEntity` to/from domain models internally
+- **DomainModels** (`app/core/DomainModels/`) - `record` types used across all layers
 - **Dtos** (`app/api/Dtos/`) - serialized request/response shapes at the Function boundary only
 
 No interfaces; single implementations. Primary constructors on all classes. `TreatWarningsAsErrors` is enabled.
@@ -80,10 +97,11 @@ Vite + React + TypeScript PWA (`app/ui/`). Builds to `app/ui/dist/`. Key structu
 
 ### Storage Schema
 
-All three tables use `AzureWebJobsStorage`:
-- `Dogs` - PartitionKey=`"dog"`, RowKey=Aid (petbridge animal ID)
+All four tables use `AzureWebJobsStorage`:
+- `Dogs` - PartitionKey=`"dog"`, RowKey=composite key (`"{shelterId}-{aid}"`)
 - `SiteState` - PartitionKey=`"state"`, RowKey=`"latest"`
 - `PushSubscriptions` - PartitionKey=`"sub"`, RowKey=SHA256(endpoint) as hex
+- `AdoptedDogs` - PartitionKey=`"adopted"`, RowKey=composite key; pruned after 7 days
 
 Tables are created at startup in `Program.cs` before the host starts.
 
@@ -110,4 +128,4 @@ In Azure: these are SWA Application Settings. `AzureWebJobsStorage` is auto-prov
 
 Azure Static Web Apps. `app/ui/public/staticwebapp.config.json` configures routing, security headers, and `apiRuntime: dotnet-isolated:9.0`. The SWA build pipeline builds from `app/ui/` (runs `npm install && npm run build`) and deploys `dist/` as the frontend alongside `app/api/` as the Functions API.
 
-The monitor trigger (`POST /api/monitor`) is client-driven—it must be called externally on a schedule (e.g., Azure Logic App or browser-side polling) since there is no timer trigger in the deployed function.
+The monitor has no HTTP trigger and no timer trigger in the deployed function — it must be driven externally (e.g., an Azure Logic App calling `MonitorOrchestrator.CheckAsync()` on a schedule).
